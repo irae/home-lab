@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>External GPU Box Notes</title>
+<style>
+:root{
+  --bg:#faf9f7; --panel:#ffffff; --ink:#1a1d1c; --muted:#5c6360; --line:#e2e0dc;
+  --accent:#0f7b6c; --accent-soft:#e6f3f0; --warn:#a8600d; --warn-soft:#fdf3e3;
+  --bad:#a3352c; --bad-soft:#fbeceb; --good:#2c6e2f; --code:#f3f2ef;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141614; --panel:#1c201e; --ink:#e8e9e7; --muted:#9aa39f; --line:#2f3532;
+    --accent:#4fd1b8; --accent-soft:#13312c; --warn:#e5a94f; --warn-soft:#2e2413;
+    --bad:#e88479; --bad-soft:#2e1a18; --good:#7fc582; --code:#232825;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141614; --panel:#1c201e; --ink:#e8e9e7; --muted:#9aa39f; --line:#2f3532;
+  --accent:#4fd1b8; --accent-soft:#13312c; --warn:#e5a94f; --warn-soft:#2e2413;
+  --bad:#e88479; --bad-soft:#2e1a18; --good:#7fc582; --code:#232825;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:44px 22px 90px}
+header{border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:28px}
+.kicker{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(28px,4.6vw,40px);line-height:1.12;margin:10px 0 10px;letter-spacing:-.022em}
+.sub{color:var(--muted);margin:0;max-width:62ch}
+nav{margin-top:14px;font-size:13px;display:flex;gap:16px;flex-wrap:wrap}
+h2{font-size:25px;letter-spacing:-.015em;margin:56px 0 6px;padding-top:6px;border-top:1px solid var(--line)}
+h2 .num{color:var(--accent);margin-right:10px;font-variant-numeric:tabular-nums}
+h3{font-size:18px;margin:34px 0 6px}
+h4{font-size:15px;margin:22px 0 4px}
+p{margin:11px 0}
+a{color:var(--accent)}
+.lede{font-size:17px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:20px 0}
+.card h3,.card h4{margin-top:0}
+.verdict{border-left:4px solid var(--accent);background:var(--accent-soft)}
+.warn{border-left:4px solid var(--warn);background:var(--warn-soft)}
+.bad{border-left:4px solid var(--bad);background:var(--bad-soft)}
+.scroll{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:600px}
+th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:var(--code);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pick{background:var(--accent-soft)}
+.total td{font-weight:700;background:var(--code)}
+.mid{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--code);padding:1px 5px;border-radius:5px}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:13px;margin:12px 0}
+pre code{background:none;padding:0}
+.note{font-size:13px;color:var(--muted)}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:6px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:18px 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+.stat .v{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.stat .l{font-size:12px;color:var(--muted);margin-top:4px}
+.tick{color:var(--good);font-weight:700}
+.cross{color:var(--bad);font-weight:700}
+footer{margin-top:54px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+@media (max-width:600px){.wrap{padding:28px 16px 70px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Build notes, September 2026</div>
+  <h1>An external GPU box for local LLMs</h1>
+  <p class="sub">Two RTX 5060 Ti now, room for four. What they run, what the data says, and how the build can grow.</p>
+  <nav><a href="#start">01 Where I start</a><a href="#data">02 What the data says</a><a href="#flash">Qwen3.8-Flash-Next</a><a href="#paths">03 Paths</a></nav>
+</header>
+
+<p class="lede">I want a local model that writes and reviews code with a long context, fast enough to feel like a chat. My desktop fits one GPU, so the new cards go in a second case next to it, on a PCIe switch. The numbers below come from one person who runs two RTX 5060 Ti 16 GB and publishes every run.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Model</th><th>Quant and engine</th><th class="num">Decode tok/s</th><th class="num">Prefill tok/s</th><th>Coding score</th></tr></thead>
+<tbody>
+<tr class="pick"><td><strong>Qwen3.8-27B</strong></td><td>NVFP4, vLLM</td><td class="num"><strong>67.3</strong></td><td class="num">952</td><td>LiveCodeBench v6 90.3</td></tr>
+<tr><td><strong>Muse-Glimmer-30B</strong></td><td>Q4 dynamic, llama.cpp</td><td class="num">42.3</td><td class="num">647</td><td>SWE-bench Pro 51.2</td></tr>
+<tr><td><strong>Qwen3.8-27B</strong></td><td>Q6_K, llama.cpp</td><td class="num">38.6</td><td class="num">598</td><td>LiveCodeBench v6 90.3</td></tr>
+<tr><td><strong>ThinkingCap-Qwen3.6-27B</strong></td><td>Q6_K, llama.cpp</td><td class="num">34.8</td><td class="num">608</td><td>None published</td></tr>
+<tr><td><strong>Qwen3.6-35B-A3B</strong></td><td>Q4_K_XL, llama.cpp</td><td class="num">27.8<br><span class="mid">79.1 short</span></td><td class="num"><strong>1,580</strong></td><td>SWE-bench Verified 73.4</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">Medians from long-prompt runs of 92K to 119K tokens, at a 122K to 131K context. Two cards at PCIe 3.0 x8, clocks locked at 2300 MHz.</p>
+
+<div class="card verdict">
+  <h3>Where this lands</h3>
+  <p style="margin-bottom:0">Two 16 GB cards are enough for a 27B model with long context. The setup that pays for the build is Qwen3.8-27B in NVFP4 on vLLM, at 67.3 tok/s near 120K tokens. In llama.cpp, Qwen3.8-27B at 4-bit with an 8-bit KV cache needs about 22 GiB at 131K tokens and 28 GiB at the full 262K, out of about 31 GiB usable. The first step costs R$ 14,019–17,067 (US$ 2,745–3,342) before I sell the old parts. Qwen's big preview model, Qwen3.8-Flash-Next, needs four cards and more RAM, so it stays on paper.</p>
+</div>
+
+<h2 id="start"><span class="num">01</span>Where I start</h2>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Part</th><th>Now</th><th>What limits it</th></tr></thead>
+<tbody>
+<tr><td>CPU</td><td>Core i5-12400F</td><td>No integrated graphics, so a GPU must drive the monitor.</td></tr>
+<tr><td>Board</td><td>ASUS TUF GAMING Z690-PLUS D4, BIOS 4301</td><td>One CPU slot. The other slots come from the chipset.</td></tr>
+<tr><td>GPU</td><td>RTX 3070 8 GB, in slot 1</td><td>Too little VRAM for a 27B model with long context.</td></tr>
+<tr><td>RAM</td><td>2 × 16 GB Kingston Fury DDR4-3200 CL16, <code>KF3200C16D4/16GX</code></td><td>In slots A2 and B2. A1 and B1 are free. DDR4 only, 128 GB maximum.</td></tr>
+<tr><td>Storage</td><td>Kingston NV1 250 GB with Windows, WD SN750 SE 250 GB with Omarchy, Crucial BX500 120 GB SATA</td><td>The Windows drive uses the CPU M.2 slot.</td></tr>
+<tr><td>PSU</td><td>850 W Gold</td><td>Fine for the desktop itself.</td></tr>
+<tr><td>Case</td><td>Fits one GPU</td><td>A 2-slot card does not fit in slot 2.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>The board, port by port</h3>
+<p>These are all the places where a GPU link can start. The data comes from the ASUS manual E19405 and from <code>lspci</code> on this machine.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Port</th><th>Link</th><th class="num">Bandwidth</th><th>Connects to</th><th>In use now</th><th>Fit in my case</th></tr></thead>
+<tbody>
+<tr class="pick"><td><strong>Slot 1</strong>, PCIEX16(G5)</td><td>Gen5 x16</td><td class="num">≈63 GB/s</td><td>CPU</td><td>RTX 3070</td><td>The only GPU position</td></tr>
+<tr><td><strong>M.2_1</strong></td><td>Gen4 x4</td><td class="num">≈7.9 GB/s</td><td>CPU</td><td>Kingston NV1, Windows</td><td>Adapter and cable</td></tr>
+<tr><td>M.2_2</td><td>Gen4 x4 or SATA</td><td class="num">≈7.9 GB/s</td><td>Chipset</td><td rowspan="3">One of these holds the WD SN750 SE, Omarchy</td><td>Adapter and cable</td></tr>
+<tr><td>M.2_3</td><td>Gen4 x4</td><td class="num">≈7.9 GB/s</td><td>Chipset</td><td>Adapter and cable</td></tr>
+<tr><td>M.2_4</td><td>Gen4 x4</td><td class="num">≈7.9 GB/s</td><td>Chipset</td><td>Adapter and cable</td></tr>
+<tr><td><strong>Slot 2</strong>, PCIEX16(G3)</td><td>Gen3 x4, x16 size</td><td class="num">≈3.9 GB/s</td><td>Chipset</td><td>Empty</td><td>No 2-slot card. Single-slot card or riser only.</td></tr>
+<tr><td>PCIEX4 slot</td><td>Gen3 x4</td><td class="num">≈3.9 GB/s</td><td>Chipset</td><td>Empty</td><td>Riser or small card, not checked</td></tr>
+<tr><td>2 × PCIEX1 slots</td><td>Gen3 x1</td><td class="num">≈1 GB/s</td><td>Chipset</td><td>Empty</td><td>Riser, not checked</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+  <li><strong>One shared chipset link.</strong> All chipset ports reach the CPU over one DMI 4.0 x8 link, about 15.8 GB/s. The SSDs, SATA, USB and the 2.5 Gb network use it too.</li>
+  <li><strong>No lane sharing.</strong> The manual lists none between these ports. M.2_2 also takes SATA drives.</li>
+  <li><strong>BIOS.</strong> Version 4301 from April 2025 has Intel microcode 0x12F. Version 4505 from December 2025 is a security and ME firmware update.</li>
+  <li><strong>Bifurcation.</strong> BIOS 3101 added "PCIe Bifurcation options for GPU with M.2 storage". I could not confirm an x8/x8 mode.</li>
+  <li><strong>Video outputs.</strong> The back panel has DisplayPort and HDMI. They work only with a CPU that has integrated graphics.</li>
+  <li><strong>Memory speed.</strong> The manual lists DDR4-3200 as standard and up to 5333 with overclocking. DDR4-3200 is enough for this build. Faster memory means a DDR5 board, a whole new build.</li>
+</ul>
+
+<div class="card warn">
+  <h4>The case limit</h4>
+  <p style="margin-bottom:0">The case fits one GPU, in slot 1. A 2-slot card does not fit in slot 2. So the RTX 3070 cannot move down to free slot 1, and no RTX 5060 Ti fits inside. Every new GPU goes into the second case. In slot 2, only a single-slot card fits, like a switch card or a riser adapter.</p>
+</div>
+
+<h3>Against the reference machine</h3>
+<div class="scroll">
+<table>
+<thead><tr><th></th><th>club-5060ti machine</th><th>Mine</th></tr></thead>
+<tbody>
+<tr><td>Board</td><td>Dell 0GWHMW, Precision T7810</td><td>ASUS TUF GAMING Z690-PLUS D4</td></tr>
+<tr><td>CPU</td><td>2 × Xeon E5-2680 v4</td><td>Core i5-12400F</td></tr>
+<tr><td>PCIe per card</td><td>x8 and x8, Gen3, ≈7.9 GB/s each</td><td>Depends on the path, see section 03</td></tr>
+<tr><td>Host RAM</td><td>128 GB DDR4-2133, 60 GB to the container</td><td>32 GB DDR4-3200</td></tr>
+<tr><td>Environment</td><td>Proxmox LXC, CUDA containers</td><td>Bare-metal Arch</td></tr>
+<tr><td>Case</td><td>Tower, both cards inside</td><td>One GPU only</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>My memory use</h3>
+<p>I sampled RAM for 60 seconds on 11 September 2026, during normal work. Process sizes are PSS, so shared memory counts once.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Measure</th><th class="num">Value</th></tr></thead>
+<tbody>
+<tr><td>RAM in use, total minus available</td><td class="num"><strong>18.3–18.5 GiB</strong> of 31.2 GiB</td></tr>
+<tr><td>Swap in use</td><td class="num">0 GiB</td></tr>
+<tr><td>Page cache, freed when programs need RAM</td><td class="num">12.7 GiB</td></tr>
+<tr><td>Brave, 41 processes</td><td class="num">4.7 GiB</td></tr>
+<tr><td>Database</td><td class="num">2.9 GiB</td></tr>
+<tr><td>AI coding tools</td><td class="num">1.9 GiB</td></tr>
+<tr><td>Node.js servers, 10 processes</td><td class="num">1.2 GiB</td></tr>
+<tr><td>Dev-builders, 16 processes</td><td class="num">1.0 GiB</td></tr>
+</tbody>
+</table>
+</div>
+<p>The worst case adds dev-builders at three times the size and more servers. Counting the database and Node servers in that growth, and adding 20% breathing room, the budget is about 39 GiB. In practice I keep work under 24 GiB. Under pressure some processes sleep, I can stop dev-builders, and the database can take less memory.</p>
+
+<h3>The ideas</h3>
+<ul>
+  <li>New GPUs in a second case next to the desktop, on a PCIe switch card.</li>
+  <li>A CPU with integrated graphics, so slot 1 is free for the switch.</li>
+  <li>More RAM, for models that keep part of their weights in system memory.</li>
+  <li>Routes that keep the RTX 3070: M.2 risers, or the switch in slot 2.</li>
+  <li>A faster Gen5 switch.</li>
+</ul>
+
+<h2 id="data"><span class="num">02</span>What the data says</h2>
+
+<h3>One careful benchmark log</h3>
+<p>Most numbers come from <a href="https://github.com/5p00kyy/club-5060ti" target="_blank" rel="noopener">club-5060ti</a>. The owner runs two RTX 5060 Ti in the Dell workstation above and publishes presets, evidence files and raw receipts separately.</p>
+<div class="grid">
+  <div class="stat"><div class="v">152</div><div class="l">GitHub stars, 9 forks</div></div>
+  <div class="stat"><div class="v">1</div><div class="l">Contributor, 58 commits</div></div>
+  <div class="stat"><div class="v">May–Aug 2026</div><div class="l">Active development</div></div>
+  <div class="stat"><div class="v">JSON</div><div class="l">Evidence with a schema and validators</div></div>
+</div>
+<ul>
+  <li><strong>It earns trust.</strong> A written <a href="https://github.com/5p00kyy/club-5060ti/blob/main/docs/benchmark-protocol.md" target="_blank" rel="noopener">benchmark protocol</a> asks for PCIe layout, driver, engine commit, KV type and draft acceptance. Failed runs stay in the record. The <a href="https://github.com/5p00kyy/club-5060ti/blob/main/docs/hardware.md" target="_blank" rel="noopener">hardware doc</a> has a section called "What Not To Generalize Yet".</li>
+  <li><strong>It has limits.</strong> It is one machine. One outside result exists, a 3 × 5060 Ti run, marked unverified. The raw model answers are not public, so nobody can re-grade them.</li>
+  <li><strong>One contradiction.</strong> The README lists the Qwen3.8 Q6_K dual setup as the main dense route. Its own preset file calls it experimental, because sustained runs did not always pass. The evidence file matches the preset file, with 3 of 4 runs passing.</li>
+</ul>
+
+<h3>The models in detail</h3>
+<div class="scroll">
+<table>
+<thead><tr><th>Model</th><th>Quant, engine</th><th class="num">Decode</th><th class="num">Prefill</th><th>Coding score</th><th>Notes</th></tr></thead>
+<tbody>
+<tr class="pick"><td><strong>Qwen3.8-27B</strong><br><span class="mid">unsloth/Qwen3.8-27B-NVFP4</span></td><td>NVFP4<br><span class="mid">vLLM, TP2</span></td><td class="num">67.3</td><td class="num">952</td><td>LiveCodeBench v6 90.3<br>SWE-bench Pro 61.7</td><td>The setup that pays for the build. Almost twice the Q6_K speed, 61/68 in the quality test, and 15.6 GB used of 16 GB per card.</td></tr>
+<tr><td><strong>Muse-Glimmer-30B</strong><br><span class="mid">meta-models/Muse-Glimmer-30B</span></td><td>Q4 dynamic<br><span class="mid">llama.cpp, DFlash</span></td><td class="num">42.3</td><td class="num">647</td><td>SWE-bench Pro 51.2<br>MCP-Atlas 75.5</td><td>Fastest sustained GGUF decode. Meta built it for tool use and failure recovery on consumer hardware.</td></tr>
+<tr><td><strong>Qwen3.8-27B</strong><br><span class="mid">Qwen/Qwen3.8-27B</span></td><td>Q6_K<br><span class="mid">llama.cpp</span></td><td class="num">38.6<br><span class="mid">44.1 short</span></td><td class="num">598</td><td>LiveCodeBench v6 90.3<br>SWE-bench Pro 61.7</td><td>Best output reliability in the quality test, 66/68. The model I test on my M1 Max.</td></tr>
+<tr><td><strong>ThinkingCap-Qwen3.6-27B</strong><br><span class="mid">bottlecapai/ThinkingCap-Qwen3.6-27B</span></td><td>Q6_K<br><span class="mid">llama.cpp</span></td><td class="num">34.8</td><td class="num">608</td><td>None published<br>GPQA 83.8, MMLU-Pro 85.4</td><td>Uses about 46% fewer thinking tokens for the same answers.</td></tr>
+<tr><td><strong>Qwen3.6-35B-A3B</strong><br><span class="mid">Qwen/Qwen3.6-35B-A3B</span></td><td>Q4_K_XL<br><span class="mid">llama.cpp</span></td><td class="num">27.8<br><span class="mid">79.1 short</span></td><td class="num">1,580</td><td>SWE-bench Verified 73.4<br>Terminal-Bench 51.5</td><td>MoE with 3B active, so prefill is 2.5 times faster than the rest. Strongest agentic coding score here.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">Sorted by decode speed. llama.cpp decode is the median of sustained runs after a 92K-token prompt. The vLLM number is the median of three 118.7K-token runs. "Short" is the rate on brief retrieval answers.</p>
+<p>The "Nail 35B-A3B" preset in the repo is stock Qwen3.6-35B-A3B with a chat template that asks for short answers. It ships only for Apple MLX. The plain <code>unsloth/Qwen3.6-35B-A3B-GGUF</code> with the Nail settings does the same job.</p>
+
+<h3>Quality, graded without an LLM judge</h3>
+<p>On 18 August 2026 the repo ran 68 graded cases per serving stack on Qwen3.8-27B. The grader checks exact answers, JSON shape, tool calls and marker retrieval at 8K to 115K tokens. It uses fixed seeds, repeats every case twice and reuses no prompt cache.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Stack</th><th class="num">Answer correct</th><th class="num">Output format</th><th class="num">Both</th></tr></thead>
+<tbody>
+<tr class="pick"><td>llama.cpp, Q6_K, f16 KV, draft-MTP2</td><td class="num">66/68</td><td class="num">68/68</td><td class="num"><strong>66/68</strong></td></tr>
+<tr><td>vLLM, NVFP4, FP8 KV, MTP3</td><td class="num">65/68</td><td class="num">64/68</td><td class="num">61/68</td></tr>
+</tbody>
+</table>
+</div>
+<p>The faster stack lost on format. Four long-context answers were right but came back wrapped in JSON code fences, and a coding agent that parses replies breaks on that. Both stacks got all long-context retrieval answers right. The stacks differ in engine, weights, KV cache and draft settings, so this does not prove NVFP4 is worse than Q6_K. The repo says that too.</p>
+
+<h3>Coding</h3>
+<p>The coding signal comes from the model cards, not from the repo. No card publishes HumanEval, MBPP or Aider scores, so it rests on SWE-bench and LiveCodeBench.</p>
+<div class="card bad">
+  <p style="margin:0">The repo's own 8 code cases say little. Both stacks scored 8 out of 8, and the suite never runs the generated code. The data tells a lot about speed, context and output format, and almost nothing about whether the code works.</p>
+</div>
+<p>The repo owner serves these models to coding agents through an OpenAI-compatible API, with setup notes for Open WebUI, Cline, Cursor and OpenCode. There is no test of prose or creative writing. The trap they hit most is thinking mode. Qwen can spend the whole output budget on hidden reasoning and return nothing visible. They use 1,024 tokens with thinking off, 4,096 for light coding and 8,192 or more for hard reasoning.</p>
+
+<h3>How much the PCIe link matters</h3>
+<p>llama.cpp splits a model by layers by default, so only small activations cross between cards. vLLM tensor parallel does an all-reduce at every layer, which sends more data over the bus. The repo's hardware doc warns that x16/x16, x16/x4 and x4/x4 results do not compare directly.</p>
+<h4>How data moves between the cards</h4>
+<p>With the stock NVIDIA driver, a GeForce card cannot write straight into another card's memory. So data from GPU 0 goes up through the switch into system RAM, then back down through the switch to GPU 1. The CPU does not compute on that data. It sets up the copies, and the cards move the bytes with DMA. With a peer-to-peer driver, and a switch that allows it, the switch forwards the data from GPU 0 to GPU 1 and it never touches the CPU or RAM.</p>
+<p>How much data moves depends on the split mode.</p>
+<ul>
+  <li><strong>Layer split, the llama.cpp default.</strong> Each token crosses once between the two halves of the model. For Qwen3.8-27B that is one vector of 5,120 numbers, about 20 KB. A 512-token prefill batch sends about 10 MB. Against 15.8 GB/s per card, the trip through RAM costs almost nothing.</li>
+  <li><strong>Tensor split in llama.cpp, tensor parallel in vLLM.</strong> Both cards work on every layer and sync their results several times per layer. Here the traffic is real, and peer-to-peer helps. The club-5060ti NVFP4 run still reached 67.3 tok/s over PCIe 3.0 x8, and the repo mentions no peer-to-peer patch.</li>
+  <li><strong>The CPU keeps some work.</strong> It runs sampling, schedules each step, and does the n-gram table lookups for a model that keeps that table in RAM. For a 27B model on two GPUs that is a light load.</li>
+</ul>
+
+<div class="card bad">
+  <h4>Peer-to-peer decides what a switch gives</h4>
+  <p>NVIDIA blocks peer-to-peer transfers on GeForce cards in the stock driver. Without them, all GPU-to-GPU traffic goes up to the CPU and back down. The patched driver <a href="https://github.com/aikitoria/open-gpu-kernel-modules" target="_blank" rel="noopener">aikitoria/open-gpu-kernel-modules</a>, version 610.57.04, lists RTX 5060 Ti support. It needs Resizable BAR, Above 4G Decoding and IOMMU passthrough. I found no report of it on an RTX 5060 Ti behind a switch.</p>
+  <p style="margin-bottom:0">A patched driver also drives every NVIDIA card in the machine. With the monitor on integrated graphics, a driver problem cannot take the desktop down.</p>
+</div>
+<div class="scroll">
+<table>
+<thead><tr><th>Setup</th><th>Model and engine</th><th class="num">Decode</th><th class="num">Prefill</th><th>Notes</th></tr></thead>
+<tbody>
+<tr class="pick"><td><strong>3 × RTX 5060 Ti</strong>, ASUS PRIME Z390-A, i7-8700. Links x8, x8 and <strong>x4</strong>, all Gen3. No switch.</td><td>Qwen3.8-27B Q8_0, q8 KV, 204.8K context. Ollama, layer split.</td><td class="num">30.5<br><span class="mid">24.2 at 176K</span></td><td class="num">≈480<br><span class="mid">367 s to first token</span></td><td>A x4 Gen3 card works with layer split at long context. Community run, 2 repeats, not verified.</td></tr>
+<tr><td><strong>2 × AMD R9700 32 GB</strong> behind a PEX88048 in a x16 slot, plus a Strix Halo iGPU.</td><td>gpt-oss-120b Q4_K_M, Qwen3.6-35B-A3B Q8_0. llama.cpp, ROCm 7.2.4.</td><td class="num">100.4<br><span class="mid">72.3 Qwen</span></td><td class="num">2,606<br><span class="mid">at 512 tokens</span></td><td>GPU to GPU 13.4 GB/s, host to GPU ≈7 GB/s. AMD allows peer-to-peer, so this shows the switch fabric, not GeForce behavior.</td></tr>
+<tr><td><strong>2 × RTX 3090</strong>, patched driver, topology not given.</td><td>Qwen 3.5 35B-A3B and 27B. vLLM tensor parallel.</td><td class="num">not given</td><td class="num">not given</td><td>10% to 30% more throughput with peer-to-peer, mostly with many requests.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="flash">Qwen3.8-Flash-Next, the big one</h3>
+<div class="card">
+  <p style="margin:0">This part is an experiment. The model I expect to use every day is a dense 27B-class model with the Qwen4 architecture, if Qwen releases one.</p>
+</div>
+<p>Qwen released <a href="https://huggingface.co/Qwen/Qwen3.8-Flash-Next" target="_blank" rel="noopener">Qwen3.8-Flash-Next</a> on 26 August 2026 as a preview of the Qwen4 architecture.</p>
+<ul>
+  <li><strong>Size.</strong> 125B parameters with 6B active, a MoE with 512 experts, 10 routed and 1 shared per token. A 51B n-gram embedding table and a 4B MTP draft layer come on top.</li>
+  <li><strong>Architecture.</strong> 48 layers, three Gated DeltaNet layers then one Qwen Sparse Attention layer, repeated. The context is 262K tokens.</li>
+  <li><strong>The n-gram table.</strong> It is a lookup inside the GGUF, named <code>per_layer_token_embd</code>. Each token reads about 2.7 KB from it, so it can live in system RAM or on SSD through mmap.</li>
+  <li><strong>Software.</strong> Mainline llama.cpp supports it since <a href="https://github.com/ggml-org/llama.cpp/pull/27742" target="_blank" rel="noopener">PR #27742</a> of 27 August 2026. The faster EngramHalo.cpp fork runs only on AMD Strix Halo. Users run it with <code>-ot per_layer_token_embd=CPU</code>, <code>-ncmoe N</code> and <code>--load-mode mmap</code>.</li>
+</ul>
+
+<h4>What people run today</h4>
+<div class="scroll">
+<table>
+<thead><tr><th>Setup</th><th>System RAM</th><th>Quant</th><th class="num">Decode</th></tr></thead>
+<tbody>
+<tr class="pick"><td>RTX 5070 Ti + RTX 5060 Ti, 32 GB VRAM</td><td>64 GB</td><td>UD-IQ3_XXS</td><td class="num">23.3 tok/s<br><span class="mid">prefill 216</span></td></tr>
+<tr><td>RTX 3090 Ti, 24 GB VRAM</td><td>128 GB DDR4-3200</td><td>UD-Q4_K_XL</td><td class="num">15 tok/s<br><span class="mid">at 30K context</span></td></tr>
+<tr><td>2 × RTX 3090, 48 GB VRAM, PCIe 3.0</td><td>DDR4-2133</td><td>UD-Q6_K_XL</td><td class="num">17.6 tok/s<br><span class="mid">23–24 with unmerged PRs</span></td></tr>
+<tr><td>RTX 5090, 32 GB VRAM</td><td>128 GB DDR5-5200</td><td>UD-Q2_K_XL</td><td class="num">47–62 tok/s</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>The ideal layout on four cards</h4>
+<p>The n-gram table stays in RAM. Everything else, the drafter and a 262K context stay on the GPUs, with nothing on the CPU. I read the tensor sizes from the unsloth GGUF file headers. Four cards give about 58 GiB.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Quant</th><th class="num">Table in RAM</th><th class="num">Other weights</th><th class="num">VRAM, f16 KV</th><th class="num">VRAM, q8_0 KV</th></tr></thead>
+<tbody>
+<tr><td>UD-IQ1_S</td><td class="num">26.8 GiB</td><td class="num">40.7 GiB</td><td class="num">50.1 GiB <span class="tick">fits</span></td><td class="num">47.1 GiB <span class="tick">fits</span></td></tr>
+<tr><td>UD-IQ1_M</td><td class="num">26.8 GiB</td><td class="num">42.6 GiB</td><td class="num">52.0 GiB <span class="tick">fits</span></td><td class="num">49.0 GiB <span class="tick">fits</span></td></tr>
+<tr class="pick"><td>UD-Q2_K_XL</td><td class="num">26.8 GiB</td><td class="num">46.6 GiB</td><td class="num">56.0 GiB <span class="tick">fits</span></td><td class="num">53.0 GiB <span class="tick">fits</span></td></tr>
+<tr class="pick"><td>UD-IQ3_XXS</td><td class="num">26.8 GiB</td><td class="num">49.5 GiB</td><td class="num">58.9 GiB <span class="cross">no</span></td><td class="num">55.9 GiB <span class="tick">fits</span></td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">14.5 GiB usable per card, my estimate. Larger quants need more than four cards and fall outside this build.</p>
+<ul>
+  <li><strong>Drafter.</strong> The "shared" Q8_0 MTP file is 2.60 GiB. It reuses the main embedding and output weights.</li>
+  <li><strong>KV cache.</strong> Only 12 of the 48 layers keep one, with 2 KV heads of 256 dimensions. At 262K tokens it takes 6.0 GiB at f16 or 3.2 GiB at q8_0. The MTP layer adds 0.5 GiB at f16.</li>
+  <li><strong>Other context memory.</strong> The sparse attention index takes about 0.2 GiB, my estimate. The 36 DeltaNet layers keep a fixed 108 MiB state.</li>
+  <li><strong>Vision and loading.</strong> The mmproj file adds 0.84 GiB for images. With mmap loading on, GPU weights leave system RAM after the load.</li>
+</ul>
+<p>So the floor is four cards, with UD-Q2_K_XL or UD-IQ3_XXS at almost no margin.</p>
+
+<h4>RAM for the table</h4>
+<div class="scroll">
+<table>
+<thead><tr><th>Scenario</th><th class="num">Needs</th><th class="num">32 GB<br><span class="mid">31 GiB</span></th><th class="num">64 GB<br><span class="mid">62 GiB</span></th><th class="num">96 GB<br><span class="mid">93 GiB</span></th></tr></thead>
+<tbody>
+<tr><td>Work at 24 GiB, 27B model fully on GPUs</td><td class="num">24 GiB</td><td class="num"><span class="tick">yes</span>, 7 free</td><td class="num"><span class="tick">yes</span>, 38 free</td><td class="num"><span class="tick">yes</span>, 69 free</td></tr>
+<tr class="pick"><td>Work at 24 GiB + the 26.8 GiB table</td><td class="num">51 GiB</td><td class="num"><span class="cross">no</span></td><td class="num"><span class="tick">yes</span>, 11 free</td><td class="num"><span class="tick">yes</span>, 43 free</td></tr>
+<tr><td>Worst-case work at 39 GiB + the table</td><td class="num">66 GiB</td><td class="num"><span class="cross">no</span></td><td class="num"><span class="cross">no</span></td><td class="num"><span class="tick">yes</span>, 27 free</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card verdict">
+  <h4>Memory plan</h4>
+  <ul style="margin-bottom:0">
+    <li><strong>64 GB first.</strong> A second 2 × 16 GB kit, ideally the same Kingston part, goes in A1 and B1. That covers smaller future models that keep an n-gram table fully in RAM.</li>
+    <li><strong>96 GB for Flash-Next for real.</strong> A 2 × 32 GB kit plus the current 2 × 16 GB. It holds the table even with worst-case work.</li>
+    <li><strong>Slots.</strong> Four 16 GB sticks fill all 4 slots. Going to 96 GB later means swapping one 16 GB pair for the 32 GB pair, and one kit becomes a spare.</li>
+    <li><strong>Speed.</strong> Four DDR4 sticks may not hold 3200 MHz with XMP. If the system is unstable, the BIOS speed goes down.</li>
+  </ul>
+</div>
+
+<div class="scroll">
+<table>
+<thead><tr><th>DDR4 kit</th><th class="num">Price in Brazil</th><th>Store</th></tr></thead>
+<tbody>
+<tr><td><a href="https://www.zoom.com.br/busca/memoria+ddr4+32gb+2x16gb+3200" target="_blank" rel="noopener">2 × 16 GB DDR4-3200</a><br><span class="mid"><a href="https://www.zoom.com.br/busca/kingston+fury+beast+2x16gb+3200" target="_blank" rel="noopener">Kingston Fury Beast search</a></span></td><td class="num">R$ 1,698–1,798 (US$ 332–352)</td><td>Mercado Livre snippet, Corsair LPX. Amazon has Crucial at R$ 1,749 (US$ 342).</td></tr>
+<tr class="pick"><td><a href="https://www.buscape.com.br/busca/memoria+ddr4+2x32gb+3200" target="_blank" rel="noopener">2 × 32 GB DDR4-3200</a></td><td class="num">R$ 4,950 (US$ 969)</td><td>KaBuM, Kingston Fury Beast RGB.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card warn">
+  <p style="margin:0">VRAM is the real limit of this build, not system RAM. The vLLM NVFP4 route used 15,613 MB of 16,384 MB per card, 95% full. That is why single-card presets drop to IQ3_XXS and 64K context.</p>
+</div>
+
+<h4>A theoretical Qwen4-27B on two cards</h4>
+<p>No Qwen4-27B exists yet. For this exercise I take the Qwen3.8-27B body, 64 layers with 16 of them keeping a KV cache, and add a Flash-Next-style n-gram table in RAM. The table does not shrink the VRAM part. The dense weights stay the same size, and the table adds knowledge outside the GPUs. Sizes come from the unsloth Qwen3.8-27B files and the measured formula above, against about 31 GiB usable.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Weights on GPUs</th><th class="num">32K</th><th class="num">64K</th><th class="num">131K</th><th class="num">205K</th><th class="num">262K</th></tr></thead>
+<tbody>
+<tr><td>Q8_0, no drafter<br><span class="mid">27.1 GiB weights</span></td><td class="num">28.2 <span class="tick">fits</span></td><td class="num">29.4 <span class="tick">fits</span></td><td class="num">31.8 <span class="cross">no</span></td><td class="num">34.5 <span class="cross">no</span></td><td class="num">36.6 <span class="cross">no</span></td></tr>
+<tr><td>UD-Q6_K_XL<br><span class="mid">23.6 GiB weights</span></td><td class="num">25.5 <span class="tick">fits</span></td><td class="num">26.9 <span class="tick">fits</span></td><td class="num">29.5 <span class="tick">fits</span></td><td class="num">32.5 <span class="cross">no</span></td><td class="num">34.8 <span class="cross">no</span></td></tr>
+<tr><td>UD-Q6_K<br><span class="mid">20.5 GiB weights</span></td><td class="num">22.4 <span class="tick">fits</span></td><td class="num">23.8 <span class="tick">fits</span></td><td class="num">26.4 <span class="tick">fits</span></td><td class="num">29.4 <span class="tick">fits</span></td><td class="num">31.7 <span class="cross">no</span></td></tr>
+<tr><td>UD-Q5_K_XL<br><span class="mid">19.4 GiB weights</span></td><td class="num">21.4 <span class="tick">fits</span></td><td class="num">22.7 <span class="tick">fits</span></td><td class="num">25.4 <span class="tick">fits</span></td><td class="num">28.4 <span class="tick">fits</span></td><td class="num">30.7 tight</td></tr>
+<tr><td>UD-Q4_K_XL<br><span class="mid">16.4 GiB weights</span></td><td class="num">18.3 <span class="tick">fits</span></td><td class="num">19.7 <span class="tick">fits</span></td><td class="num">22.3 <span class="tick">fits</span></td><td class="num">25.3 <span class="tick">fits</span></td><td class="num">27.6 <span class="tick">fits</span></td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">VRAM in GiB, q8_0 KV. Rows with a drafter use built-in MTP. "Tight" means less than 1 GiB spare.</p>
+<ul>
+  <li><strong>Best quality per context.</strong> Up to 64K with Q8_0 and no drafter. 131K with UD-Q6_K_XL. 205K with UD-Q6_K. 262K with UD-Q4_K_XL, or UD-Q5_K_XL with no margin.</li>
+  <li><strong>8-bit weights.</strong> On two cards they reach 64K without a drafter. Long context at 8-bit needs a third card.</li>
+  <li><strong>The table.</strong> If it matches Flash-Next, it takes 26.8 GiB at 4-bit or 50.7 GiB at 8-bit. With work under 24 GiB, the 4-bit table fits in 64 GB and the 8-bit table in 96 GB, which is the memory plan above.</li>
+</ul>
+
+<h2 id="paths"><span class="num">03</span>Paths, from likely to far-fetched</h2>
+
+<h3>1. Two cards in a GPU tower</h3>
+<p>The CPU becomes a Core i5-12400, the same chip with integrated graphics. The monitor moves to the board's HDMI or DisplayPort. The RTX 3070 goes up for sale, and a PEX88048 switch card takes slot 1. Four SFF-8654 cables run to baseplates in a closed tower next to the desktop, with its own 1000 W PSU. Two RTX 5060 Ti go in now. The PSU, the switch and the tower have room for four. An open frame remains an option if the tower does not work out.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Part</th><th class="num">Price in Brazil</th></tr></thead>
+<tbody>
+<tr><td><a href="https://www.zoom.com.br/busca/core+i5-12400" target="_blank" rel="noopener">Core i5-12400</a></td><td class="num">R$ 1,100–1,304 (US$ 215–255)</td></tr>
+<tr><td>PEX88048 <a href="https://pt.aliexpress.com/item/1005012129502705.html" target="_blank" rel="noopener">card with 4 cables</a>, 4 <a href="https://pt.aliexpress.com/item/1005010019091866.html" target="_blank" rel="noopener">baseplates</a>, tax included</td><td class="num">R$ 2,424–3,100 (US$ 475–607)</td></tr>
+<tr><td>1000 W Gold PSU, <a href="https://www.zoom.com.br/busca/corsair+rm1000e" target="_blank" rel="noopener">Corsair RM1000e</a></td><td class="num">R$ 955 (US$ 187)</td></tr>
+<tr><td>GPU tower, one of the cases below</td><td class="num">R$ 1,602–3,073 (US$ 314–602)</td></tr>
+<tr><td>Add2PSU board, starts both PSUs together. <a href="https://www.zoom.com.br/busca/add2psu" target="_blank" rel="noopener">Zoom</a>, <a href="https://pt.aliexpress.com/item/1005003157010708.html" target="_blank" rel="noopener">AliExpress</a></td><td class="num">R$ 20–35 (US$ 4–7)</td></tr>
+<tr><td>2 × RTX 5060 Ti 16 GB. <a href="https://www.zoom.com.br/busca/rtx+5060+ti+16gb" target="_blank" rel="noopener">Zoom</a>, <a href="https://www.buscape.com.br/busca/rtx+5060+ti+16gb" target="_blank" rel="noopener">Buscapé</a></td><td class="num">R$ 7,918–8,600 (US$ 1,550–1,684)</td></tr>
+<tr class="total"><td>Total, before selling the RTX 3070 and the i5-12400F</td><td class="num">R$ 14,019–17,067 (US$ 2,745–3,342)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>The switch card</h4>
+<ul>
+  <li><strong>What it is.</strong> A Broadcom PEX88048, a real PCIe switch, so it needs no BIOS bifurcation. The eBay kit title reads "PLX88048 PCIe 4.0 x16 4*SFF-8654 8I Expansion Card + 4*Baseplate 4*Cable X8X8X8X8".</li>
+  <li><strong>Links.</strong> A PCIe 4.0 x16 uplink, and 4 SlimSAS SFF-8654 8i ports at PCIe 4.0 x8, about 15.8 GB/s each. Each card gets a better link than on the reference machine.</li>
+  <li><strong>Baseplates.</strong> Each has a 6-pin power input that feeds the 75 W slot.</li>
+</ul>
+<div class="scroll">
+<table>
+<thead><tr><th>Traffic path</th><th>Switch in slot 1</th><th>Switch in slot 2</th></tr></thead>
+<tbody>
+<tr><td>Host to all GPUs, shared</td><td>≈31.5 GB/s, direct to CPU</td><td><strong>≈3.9 GB/s</strong>, through the chipset</td></tr>
+<tr><td>GPU to GPU, peer-to-peer on</td><td>≈15.8 GB/s, inside the switch</td><td>≈15.8 GB/s, inside the switch</td></tr>
+<tr><td>GPU to GPU, stock driver</td><td>≈15.8 GB/s, through CPU RAM</td><td><strong>≈3.9 GB/s</strong>, through CPU RAM</td></tr>
+<tr><td>Model load from disk</td><td>Fast</td><td>Slow</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>The GPU tower</h4>
+<p>The second case sits in my office next to the desktop, so it has to be closed, quiet enough and good looking. No mainstream case has a mount for baseplates or a pass-through for SFF-8654 cables. The simple way is a flat aluminium or acrylic plate on the ATX standoffs, with the baseplates screwed to it so the cards line up with the rear slots. The cables come in through a slot cover with a cutout, or a grommet. I did not find the baseplate hole pattern yet.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Case</th><th class="num">Rear slots</th><th>Fans</th><th>Size, mm</th><th class="num">Price in Brazil</th><th>Four cards</th></tr></thead>
+<tbody>
+<tr class="pick"><td><strong><a href="https://www.phanteks.store/products/phanteks-enthoo-pro-2-server-edition-closed-side-panel-black" target="_blank" rel="noopener">Phanteks Enthoo Pro 2 Server Edition</a></strong></td><td class="num">11</td><td>15 × 120. A side bracket for 3 fans blows on the cards.</td><td>240 × 580 × 560</td><td class="num">No Brazil price<br><span class="mid">US$ 179.99 at Phanteks</span></td><td>A gap between each 2-slot card, no spare slot.</td></tr>
+<tr><td><strong>Phanteks Enthoo Pro 2</strong></td><td class="num">8 + 3, not confirmed</td><td>15 × 120</td><td>240 × 580 × 560</td><td class="num">R$ 1,620 (US$ 317)<br><span class="mid">Mercado Livre snippet</span></td><td>No gaps, if 8 are rear slots.</td></tr>
+<tr><td><strong><a href="https://www.zoom.com.br/busca/fractal+design+meshify+2+xl" target="_blank" rel="noopener">Fractal Meshify 2 XL</a></strong></td><td class="num">9 + 3 vertical</td><td>11 × 120, 3 included, mesh front</td><td>600 × 240 × 566</td><td class="num">R$ 1,602–2,232 (US$ 314–437)</td><td>No gaps, or three cards with gaps.</td></tr>
+<tr><td><strong><a href="https://www.zoom.com.br/search?q=9000D%20RGB%20Airflow" target="_blank" rel="noopener">Corsair 9000D RGB Airflow</a></strong></td><td class="num">8 + 2 vertical</td><td>18 × 120, none included</td><td>698 × 307 × 698</td><td class="num">R$ 1,880–2,636 (US$ 368–516)</td><td>No gaps.</td></tr>
+<tr><td><strong>Lian Li V3000 Plus</strong></td><td class="num">8 + 3</td><td>16 fans. Four 120 mm fans at the bottom push air up.</td><td>678 × 279 × 674</td><td class="num">R$ 3,073 (US$ 602)<br><span class="mid">Mercado Livre snippet</span></td><td>No gaps.</td></tr>
+<tr><td><strong><a href="https://pt.aliexpress.com/item/1005010589100758.html" target="_blank" rel="noopener">WS04A 4-GPU workstation</a></strong>, AliExpress</td><td class="num">4 riser positions</td><td>Not confirmed</td><td>550 × 380 × 590, about 30 kg shipped</td><td class="num">R$ 5,558–5,766 (US$ 1,088–1,129)<br><span class="mid">tax included, no shipping</span></td><td>Built for 4 × RTX 4090 on risers. Spacing not confirmed.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">Four 2-slot cards with one empty slot between them need 11 rear slots. Cards 2.5 slots thick take 3 slots each and lose the gap. An <a href="https://pt.aliexpress.com/item/1005010163207634.html" target="_blank" rel="noopener">open frame</a> stays a fallback.</p>
+
+<h4>What it runs</h4>
+<p>Qwen3.8-27B at 3-bit or 4-bit, with a q8_0 KV cache and the built-in MTP drafter, fits the full 262K context on two cards. Only 16 of its 64 layers keep a KV cache. The numbers use a VRAM formula that a user measured on about 30 real llama.cpp loads: the cache grows 42.47 KiB per token with q8_0 and MTP, and built-in MTP adds 668 MiB. Two RTX 5060 Ti have 31.9 GiB. I take off about 1 GiB for the second card's CUDA context and buffers, so about 31 GiB is usable.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Qwen3.8-27B, built-in MTP, q8_0 KV</th><th class="num">131K context</th><th class="num">205K context</th><th class="num">262K, trained max</th></tr></thead>
+<tbody>
+<tr><td>UD-Q3_K_XL, 12.2 GiB file</td><td class="num">18.2 GiB <span class="tick">fits</span></td><td class="num">21.2 GiB <span class="tick">fits</span></td><td class="num">23.5 GiB <span class="tick">fits</span></td></tr>
+<tr class="pick"><td>UD-Q4_K_XL, 16.4 GiB file</td><td class="num">22.3 GiB <span class="tick">fits</span></td><td class="num">25.3 GiB <span class="tick">fits</span></td><td class="num">27.6 GiB <span class="tick">fits</span></td></tr>
+<tr><td>UD-Q5_K_XL, 19.4 GiB file</td><td class="num">25.4 GiB <span class="tick">fits</span></td><td class="num">28.4 GiB <span class="tick">fits</span></td><td class="num">30.7 GiB tight</td></tr>
+<tr><td>UD-Q6_K, 20.5 GiB file</td><td class="num">26.4 GiB <span class="tick">fits</span></td><td class="num">29.4 GiB <span class="tick">fits</span></td><td class="num">31.7 GiB <span class="cross">no</span></td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">Weights counted at full file size, a little above the measured load. "Fits" leaves at least 1 GiB spare, "tight" less than that. The vision mmproj adds 1.1 GiB on the GPU.</p>
+<p>No one has posted UD-Q4_K_XL at exactly 262K with q8_0 on two cards yet. The closest real report is <a href="https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/discussions/72" target="_blank" rel="noopener">two RTX 5060 Ti running Q5_K_M at 215K context</a> with q8_0 KV, MTP and <code>--split-mode tensor</code>. By the <a href="https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/discussions/87" target="_blank" rel="noopener">measured formula</a> that load needs about 27.8 GiB, a little more than UD-Q4_K_XL at 262K. It decodes at 30 tok/s on PCIe 3.0 x8 across two CPU sockets, and a second user with the same cards gets 55 to 60 tok/s at 197K context on PCIe 4.0. So q4_0 KV is not needed, and UD-Q3_K_XL stays a spare option. Newer UD-Q4_K_XL files default to 131K, so <code>--ctx-size 262144</code> has to be set by hand, per <a href="https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/discussions/110" target="_blank" rel="noopener">this report</a>.</p>
+<p>The target is NVFP4 on vLLM. The reference machine runs it at 67.3 tok/s near 120K context, with an FP8 KV cache and 15.6 GB used per card. The same model runs at 38.6 tok/s with Q6_K in llama.cpp. vLLM tensor parallel moves more data between cards, and behind the switch in slot 1 each card gets twice the reference machine's link. Nobody has published a Q4_K_XL number on two cards yet.</p>
+
+<h4>The CPU</h4>
+<div class="scroll">
+<table>
+<thead><tr><th>CPU</th><th>Cores, threads</th><th>Graphics</th><th class="num">Mercado Livre</th><th class="num">Other stores</th></tr></thead>
+<tbody>
+<tr class="pick"><td><a href="https://www.zoom.com.br/busca/core+i5-12400" target="_blank" rel="noopener">Core i5-12400</a></td><td>6, 12</td><td>UHD 730</td><td class="num">R$ 1,100 (US$ 215)</td><td class="num">R$ 1,304 (US$ 255)</td></tr>
+<tr><td><a href="https://www.zoom.com.br/busca/core+i5-14400" target="_blank" rel="noopener">Core i5-14400</a></td><td>10, 16</td><td>UHD 730</td><td class="num">R$ 1,210–1,451 (US$ 237–284)</td><td class="num">R$ 1,623 (US$ 318)</td></tr>
+<tr><td><a href="https://www.zoom.com.br/busca/core+i7-14700k" target="_blank" rel="noopener">Core i7-14700K</a></td><td>20, 28</td><td>UHD 770</td><td class="num">R$ 2,747–4,014 (US$ 538–786)</td><td class="num">R$ 2,800 (US$ 548)</td></tr>
+<tr><td><a href="https://www.zoom.com.br/busca/core+i9-14900k" target="_blank" rel="noopener">Core i9-14900K</a></td><td>24, 32</td><td>UHD 770</td><td class="num">R$ 4,049–5,539 (US$ 793–1,085)</td><td class="num">R$ 3,294 (US$ 645)</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+  <li><strong>BIOS.</strong> 13th gen needs 2103 or newer, 14th gen needs 2802 or newer. Version 4301 covers all of them.</li>
+  <li><strong>13th and 14th gen stability.</strong> High voltage requests caused instability and degradation on these chips. BIOS 4301 has microcode 0x12F, which prevents new damage but cannot repair a damaged chip. Used 13th and 14th gen CPUs from unknown sellers are a risk. 12th gen is not affected.</li>
+  <li><strong>Cooling.</strong> The i9-14900K draws up to 253 W at Intel defaults.</li>
+  <li><strong>The F models.</strong> An i9-14900KF or i5-12400F has no graphics and does not solve the monitor problem.</li>
+</ul>
+
+<h4>Games after the RTX 3070 leaves</h4>
+<p>Games render on a 5060 Ti, through PRIME render offload or with the monitor on that card. I did not measure the offload cost. The games I play are light.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Game</th><th>Linux build</th><th>ProtonDB</th><th>Steam Deck</th><th>Minimum GPU</th></tr></thead>
+<tbody>
+<tr><td>Hollow Knight: Silksong</td><td>Native</td><td>Platinum, 349 reports</td><td>Verified</td><td>GTX 560 Ti</td></tr>
+<tr><td>Dead Cells</td><td>Native</td><td>Platinum, 154 reports</td><td>Verified</td><td>GTS 450</td></tr>
+<tr><td>Spelunky 2</td><td>Proton</td><td>Gold, trending Platinum</td><td>Verified</td><td>GTX 750</td></tr>
+</tbody>
+</table>
+</div>
+<p>Steam forum users fix Silksong controller problems on the native build with Proton Experimental. The minimum GPUs are old enough that integrated UHD 730 may run these games. I found no trustworthy test.</p>
+
+<h4>Build notes</h4>
+<ul>
+  <li><strong>Power plugs.</strong> Four GPUs and four baseplates want eight PCIe plugs. The RM1000e ships with fewer, so cards three and four need extra modular cables. The MSI MAG A1000GL has 6 plugs, but I found no price.</li>
+  <li><strong>Cables.</strong> Gen4 over SlimSAS is sensitive to length and quality. If a card drops off the bus, the slot goes to Gen3 in the BIOS.</li>
+  <li><strong>Firmware and kernel.</strong> Above 4G Decoding and Resizable BAR on. The Level1Techs PEX88048 build needed <code>pci=realloc</code>.</li>
+  <li><strong>Settings from the repo.</strong> <code>tensor-split = 50,50</code> exactly, because <code>51,49</code> asserts in tensor mode. Output budgets set before judging quality.</li>
+  <li><strong>Checks.</strong> <code>nvidia-smi topo -m</code> shows <code>PIX</code> for cards on the same switch. The link width and gen:</li>
+</ul>
+<pre><code>nvidia-smi --query-gpu=index,name,pcie.link.gen.current,pcie.link.width.current --format=csv</code></pre>
+<p>No RTX 5060 Ti result behind a PCIe switch exists in club-5060ti yet, so this build would be a new data point.</p>
+
+<h3>2. 64 GB of RAM</h3>
+<p>A second 2 × 16 GB DDR4-3200 kit costs R$ 1,700–1,800 (US$ 332–352). My work plus a 26.8 GiB n-gram table then fits, which covers smaller future models built the same way. The memory plan above has the details.</p>
+
+<h3>3. Four cards and 96 GB</h3>
+<p>Two more RTX 5060 Ti cost R$ 7,918–8,600 (US$ 1,550–1,684). A 2 × 32 GB kit costs R$ 4,950 (US$ 969). Together that is R$ 12,868–13,550 (US$ 2,520–2,653), plus PSU cables. It runs Qwen3.8-Flash-Next UD-Q2_K_XL or UD-IQ3_XXS fully on GPUs with the table in RAM, at almost no margin. Nobody has published a speed for that layout. With some experts in RAM instead, 4 cards and 64 GB fit UD-Q4_K_XL at an estimated 15 to 20 tok/s.</p>
+
+<h3>4. Keeping the RTX 3070</h3>
+<p>Both routes here keep the 3070 in slot 1 for games and the i5-12400F. Neither allows peer-to-peer, so llama.cpp <code>--split-mode layer</code> is the mode, and vLLM tensor parallel is off the table. The stock NVIDIA driver is enough. Small jobs like Whisper or OCR can run on the 3070, with <code>CUDA_VISIBLE_DEVICES</code> keeping llama.cpp on the 5060 Ti cards.</p>
+
+<h4>M.2 risers</h4>
+<p>Each M.2 slot takes an M.2 to OCuLink or M.2 to SFF-8654 4i adapter, and a cable runs to a dock in the GPU tower. An M.2 to OCuLink dock with 6-pin power, like <a href="https://pt.aliexpress.com/item/1005010747978538.html" target="_blank" rel="noopener">this one</a> or <a href="https://pt.aliexpress.com/item/1005011551601405.html" target="_blank" rel="noopener">this one</a>, costs R$ 182–239 (US$ 36–47) with tax on AliExpress.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>GPUs</th><th>Placement</th><th>Storage after the change</th><th>Bandwidth per GPU</th></tr></thead>
+<tbody>
+<tr><td><strong>2</strong></td><td>GPU 1 on M.2_1, CPU.<br>GPU 2 on M.2_3, chipset.</td><td>The Windows NVMe moves to a chipset M.2 slot. Both NVMe drives still fit.</td><td>≈7.9 GB/s each, like the reference machine's x8 Gen3. GPU 2 shares the chipset link.</td></tr>
+<tr><td><strong>4</strong></td><td>M.2_1, M.2_3, M.2_4 and a riser in slot 2.</td><td>One NVMe in M.2_2, plus the SATA SSD. The other NVMe, Windows or Omarchy, needs an adapter in the PCIEX4 slot, or it goes.</td><td>≈7.9, 7.9, 7.9 and 3.9 GB/s. Three GPUs share the chipset link.</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+  <li><strong>The x1 slots.</strong> Model loads become very slow, and I found no measured LLM results on x1 links.</li>
+  <li><strong>A known bug.</strong> <a href="https://github.com/ggml-org/llama.cpp/issues/20052" target="_blank" rel="noopener">llama.cpp issue #20052</a> reports garbage output past 2048 tokens on dual RTX 3090 with one card on the CPU and one on a chipset x4 port, no peer-to-peer, layer split. It closed without a fix. The 3 × 5060 Ti run above held 204K context without it.</li>
+  <li><strong>Evidence it works.</strong> A <a href="https://forum.level1techs.com/t/occulink-and-llama-cpp/253245" target="_blank" rel="noopener">Level1Techs user</a> runs M.2 to OCuLink eGPUs on an old Dell laptop, with AMD cards and partial CPU offload, at 20 to 40 tok/s on Qwen3.6 35B MoE. That is weak evidence for this build.</li>
+</ul>
+
+<h4>The switch in slot 2</h4>
+<p>The single-slot switch card fits in slot 2, but the whole GPU tower then shares one PCIe 3.0 x4 link through the chipset, about 3.9 GB/s. With the stock driver, GPU-to-GPU traffic goes up that link and back down, so the switch gives no more than a plain x4 riser. One GPU in slot 1 and others behind a switch in slot 2 have no peer-to-peer path between them.</p>
+
+<h3>5. A Gen5 switch</h3>
+<p>The RTX 5060 Ti has a PCIe 5.0 x8 link, and a Gen4 switch runs it at half that. Only a Gen5 switch gives each card its full link. With layer split the gain is small. With tensor parallel the bus is the limit, so the gain is larger.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Card</th><th>Chip</th><th>Uplink</th><th>GPU ports</th><th>Connector</th><th class="num">Brazil, tax included</th><th>Notes</th></tr></thead>
+<tbody>
+<tr class="pick"><td><strong>PEX88048</strong>, for comparison</td><td>Broadcom PEX88048</td><td>Gen4 x16</td><td>4 × Gen4 x8</td><td>SFF-8654 8i</td><td class="num">R$ 2,424–3,100<br><span class="mid">US$ 475–607</span></td><td>The path 1 kit.</td></tr>
+<tr><td><strong><a href="https://www.aliexpress.com/w/wholesale-PEX89048.html" target="_blank" rel="noopener">LR-Link LRSV9500-4I</a></strong></td><td>Broadcom PEX89048</td><td>Gen5 x16</td><td>4 × Gen5 x8</td><td>MCIO 8i</td><td class="num">R$ 12,693–35,552<br><span class="mid">US$ 2,485–6,962</span></td><td>AliExpress. Above US$ 3,000 the Remessa Conforme rule does not apply.</td></tr>
+<tr><td><strong><a href="https://c-payne.com/products/pcie-gen5-mcio-switch-52-lane-microchip-switchtec-pm50052" target="_blank" rel="noopener">c-payne CP-0550</a></strong></td><td>Microchip PM50052</td><td>Gen5 x16</td><td>2 × Gen5 x16 + 1 × x4</td><td>MCIO 8i</td><td class="num">R$ 12,008–12,458<br><span class="mid">US$ 2,351–2,439</span></td><td>€1,050 in Germany, sold out. Shipping not included.</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+  <li><strong>GPU-side adapters.</strong> An <a href="https://www.aliexpress.com/w/wholesale-mcio-8i-pcie-5.0-x16-gpu-adapter.html" target="_blank" rel="noopener">MCIO 8i to PCIe x16 Gen5 adapter</a> with a 500 mm cable costs R$ 117–166 (US$ 23–33) each with tax.</li>
+  <li><strong>Short cables.</strong> Vendor guides keep passive Gen5 MCIO under about 40 cm, and the 50 to 75 cm kit cables are at or past that limit. The GPU tower would have to sit right next to the desktop.</li>
+  <li><strong>Failed links.</strong> An NVIDIA card can fall to Gen1, not Gen4, when Gen5 training fails, per <a href="https://github.com/NVIDIA/open-gpu-kernel-modules/issues/1010" target="_blank" rel="noopener">issue #1010</a>. Forcing Gen4 gives the same speed as the PEX88048.</li>
+  <li><strong>No GeForce reports.</strong> I found nobody running a GeForce card on these Gen5 switches, and nobody with a working peer-to-peer driver on an RTX 5060 Ti.</li>
+</ul>
+
+<div class="card" id="buy">
+  <h3>Where to buy</h3>
+  <p class="note">I checked every link on 11 September 2026. Each one returned 200 with no redirect and showed the right product. Search pages show current offers, so prices move.</p>
+  <ul>
+    <li><strong>GPUs.</strong> RTX 5060 Ti 16 GB on <a href="https://www.zoom.com.br/busca/rtx+5060+ti+16gb" target="_blank" rel="noopener">Zoom</a> and <a href="https://www.buscape.com.br/busca/rtx+5060+ti+16gb" target="_blank" rel="noopener">Buscapé</a>.</li>
+    <li><strong>Switch.</strong> PEX88048 <a href="https://pt.aliexpress.com/item/1005012129502705.html" target="_blank" rel="noopener">card with 4 SFF-8654 cables</a> and <a href="https://pt.aliexpress.com/item/1005010019091866.html" target="_blank" rel="noopener">SFF-8654 baseplate</a> on AliExpress. Other sellers in the <a href="https://www.aliexpress.com/w/wholesale-PEX88048.html" target="_blank" rel="noopener">PEX88048 search</a>.</li>
+    <li><strong>Power.</strong> <a href="https://www.zoom.com.br/busca/corsair+rm1000e" target="_blank" rel="noopener">Corsair RM1000e</a> on Zoom. Add2PSU on <a href="https://www.zoom.com.br/busca/add2psu" target="_blank" rel="noopener">Zoom</a> and <a href="https://pt.aliexpress.com/item/1005003157010708.html" target="_blank" rel="noopener">AliExpress</a>.</li>
+    <li><strong>GPU tower.</strong> <a href="https://www.phanteks.store/products/phanteks-enthoo-pro-2-server-edition-closed-side-panel-black" target="_blank" rel="noopener">Enthoo Pro 2 Server Edition</a> at the Phanteks store, <a href="https://www.zoom.com.br/busca/fractal+design+meshify+2+xl" target="_blank" rel="noopener">Meshify 2 XL</a> and <a href="https://www.zoom.com.br/search?q=9000D%20RGB%20Airflow" target="_blank" rel="noopener">Corsair 9000D</a> on Zoom, <a href="https://pt.aliexpress.com/item/1005010589100758.html" target="_blank" rel="noopener">WS04A</a> on AliExpress. An <a href="https://pt.aliexpress.com/item/1005010163207634.html" target="_blank" rel="noopener">open frame</a> on AliExpress as a fallback.</li>
+    <li><strong>CPU.</strong> <a href="https://www.zoom.com.br/busca/core+i5-12400" target="_blank" rel="noopener">i5-12400</a>, <a href="https://www.zoom.com.br/busca/core+i5-14400" target="_blank" rel="noopener">i5-14400</a>, <a href="https://www.zoom.com.br/busca/core+i7-14700k" target="_blank" rel="noopener">i7-14700K</a> and <a href="https://www.zoom.com.br/busca/core+i9-14900k" target="_blank" rel="noopener">i9-14900K</a> on Zoom.</li>
+    <li><strong>RAM.</strong> <a href="https://www.zoom.com.br/busca/memoria+ddr4+32gb+2x16gb+3200" target="_blank" rel="noopener">DDR4-3200 2 × 16 GB</a> and <a href="https://www.zoom.com.br/busca/kingston+fury+beast+2x16gb+3200" target="_blank" rel="noopener">Kingston Fury Beast</a> on Zoom, <a href="https://www.buscape.com.br/busca/memoria+ddr4+2x32gb+3200" target="_blank" rel="noopener">DDR4-3200 2 × 32 GB</a> on Buscapé.</li>
+    <li><strong>M.2 route.</strong> M.2 to OCuLink docks <a href="https://pt.aliexpress.com/item/1005010747978538.html" target="_blank" rel="noopener">TISHRIC</a> and <a href="https://pt.aliexpress.com/item/1005011551601405.html" target="_blank" rel="noopener">SFF-8611 kit</a> on AliExpress.</li>
+    <li><strong>Gen5 route.</strong> <a href="https://www.aliexpress.com/w/wholesale-PEX89048.html" target="_blank" rel="noopener">PEX89048 search</a> and <a href="https://www.aliexpress.com/w/wholesale-mcio-8i-pcie-5.0-x16-gpu-adapter.html" target="_blank" rel="noopener">MCIO adapters</a> on AliExpress, <a href="https://c-payne.com/products/pcie-gen5-mcio-switch-52-lane-microchip-switchtec-pm50052" target="_blank" rel="noopener">c-payne CP-0550</a>.</li>
+  </ul>
+  <p class="note" style="margin-bottom:0">Not linked. Mercado Livre sends automated visits to an account-verification page, so I could not check its listings. The eBay PEX88048 kit returns 403 and Terabyte shows a bot challenge. I found no Brazilian listing I could verify for the Lian Li V3000 Plus or the regular Enthoo Pro 2.</p>
+</div>
+
+<footer>
+  <p>Prices from Zoom, Buscapé, Mercado Livre search snippets, AliExpress search pages and eBay, on 11 September 2026, at US$ 1 = R$ 5.107 and €1 = R$ 5.953. Mercado Livre blocks automated reads, so its prices come from snippets with unknown dates. Imported parts include Brazil's 2026 Remessa Conforme rule, 60% tax minus US$ 30, then 17% or 20% ICMS by state. Shipping is not included unless noted. I found no used price for the RTX 3070 or the i5-12400F.</p>
+  <p>Data and models: <a href="https://github.com/5p00kyy/club-5060ti" target="_blank" rel="noopener">club-5060ti</a>, <a href="https://github.com/5p00kyy/club-5060ti/issues/5" target="_blank" rel="noopener">3 × RTX 5060 Ti submission</a>, <a href="https://huggingface.co/Qwen/Qwen3.8-27B" target="_blank" rel="noopener">Qwen3.8-27B</a>, <a href="https://huggingface.co/unsloth/Qwen3.8-27B-GGUF" target="_blank" rel="noopener">Qwen3.8-27B GGUF</a>, <a href="https://huggingface.co/Qwen/Qwen3.6-35B-A3B" target="_blank" rel="noopener">Qwen3.6-35B-A3B</a>, <a href="https://huggingface.co/meta-models/Muse-Glimmer-30B" target="_blank" rel="noopener">Muse-Glimmer-30B</a>, <a href="https://huggingface.co/bottlecapai/ThinkingCap-Qwen3.6-27B" target="_blank" rel="noopener">ThinkingCap-Qwen3.6-27B</a>, <a href="https://huggingface.co/Qwen/Qwen3.8-Flash-Next" target="_blank" rel="noopener">Qwen3.8-Flash-Next</a>, <a href="https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF" target="_blank" rel="noopener">Flash-Next GGUF</a>, <a href="https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF/discussions/3" target="_blank" rel="noopener">Flash-Next user reports</a>, <a href="https://inovello.dev/writeups/qwen3-flash-next-2x3090-expert-cache/" target="_blank" rel="noopener">2 × RTX 3090 Flash-Next write-up</a>.</p>
+  <p>Hardware: <a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1700/TUF_GAMING_Z690-PLUS_D4/E19405_TUF_GAMING_Z690-PLUS_D4_UM_V2_WEB.pdf" target="_blank" rel="noopener">ASUS manual E19405</a>, <a href="https://www.asus.com/motherboards-components/motherboards/tuf-gaming/tuf-gaming-z690-plus-d4/helpdesk_bios?model2Name=TUF-GAMING-Z690-PLUS-D4" target="_blank" rel="noopener">ASUS BIOS notes</a>, Intel instability post, <a href="https://forum.level1techs.com/t/franken-strix-halo-2x-r9700s-128gb-strix-halo-unified-memory/254736" target="_blank" rel="noopener">Level1Techs PEX88048 build</a>, <a href="https://forum.level1techs.com/t/occulink-and-llama-cpp/253245" target="_blank" rel="noopener">Level1Techs OCuLink thread</a>, <a href="https://github.com/ggml-org/llama.cpp/issues/20052" target="_blank" rel="noopener">llama.cpp #20052</a>, <a href="https://github.com/aikitoria/open-gpu-kernel-modules" target="_blank" rel="noopener">aikitoria driver</a>, <a href="https://smcleod.net/2026/02/patching-nvidias-driver-and-vllm-to-enable-p2p-on-consumer-gpus/" target="_blank" rel="noopener">smcleod.net P2P write-up</a>, <a href="https://c-payne.com/collections/all" target="_blank" rel="noopener">c-payne</a>, <a href="https://www.tmccables.com/techresources/uncategorized/mcio-cable-length-limits/" target="_blank" rel="noopener">MCIO cable limits</a>.</p>
+  <p>Cases: <a href="https://phanteks.com/product/enthoo-pro-2-server-edition-cp/" target="_blank" rel="noopener">Phanteks Enthoo Pro 2 Server Edition</a>, <a href="https://cdn.sanity.io/files/uxzbxy2o/production/1bc60fe11df0e6b0269090a88eec38f36586ff3c.pdf" target="_blank" rel="noopener">Meshify 2 XL sheet</a>, <a href="https://lian-li.com/product/v3000-plus/" target="_blank" rel="noopener">Lian Li V3000 Plus</a>, <a href="https://www.zoom.com.br/search?q=9000D%20RGB%20Airflow" target="_blank" rel="noopener">Corsair 9000D</a>, <a href="https://pt.aliexpress.com/item/1005010589100758.html" target="_blank" rel="noopener">WS04A</a>.</p>
+  <p>Prices and games: <a href="https://www.zoom.com.br/" target="_blank" rel="noopener">Zoom</a>, <a href="https://www.buscape.com.br/" target="_blank" rel="noopener">Buscapé</a>, <a href="https://www.aliexpress.com/w/wholesale-PEX88048.html" target="_blank" rel="noopener">AliExpress PEX88048</a>, <a href="https://www.aliexpress.com/w/wholesale-PEX89048.html" target="_blank" rel="noopener">AliExpress PEX89048</a>, <a href="https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/manuais/remessas-postal-e-expressa/regras-futuras" target="_blank" rel="noopener">Receita Federal</a>, <a href="https://wise.com/us/currency-converter/usd-to-brl-rate/history" target="_blank" rel="noopener">Wise</a>, <a href="https://www.protondb.com/" target="_blank" rel="noopener">ProtonDB</a>.</p>
+</footer>
+
+</div>
+</body>
+</html>
