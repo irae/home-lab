@@ -2,6 +2,7 @@ services:
   restricted-mail:
     build:
       context: ${APP_DIR}
+      target: prod
     restart: unless-stopped
     user: "10001:10001"
     read_only: true
@@ -25,28 +26,6 @@ services:
       retries: 3
     networks:
       - restricted-mail
-
-# Uncomment the dev service in Dockge, then click Deploy.
-#  dev:
-#    build:
-#      context: ${APP_DIR}
-#      dockerfile: Dockerfile.dev
-#    restart: unless-stopped
-#    security_opt:
-#      - no-new-privileges:true
-#    ports:
-#      - "0.0.0.0:2222:22"
-#    volumes:
-#      - ${APP_DIR}:/work
-#      - ${DEV_HOME}:/home/dev
-#      - ${AUTHORIZED_KEYS}:/etc/ssh/authorized_keys/dev:ro
-#    networks:
-#      - restricted-mail
-#    healthcheck:
-#      test: ["CMD", "bash", "-c", "</dev/tcp/localhost/22"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 3
 
 secrets:
   fastmail_token:
