@@ -48,15 +48,28 @@ UUID=<data-disk-uuid> /data ext4 defaults,noatime 0 2
 
 ## Herdr
 
-Host tool, not a container. Lingering user service + native resume: TODO.
+Host tool, not a container. User install at `~/.local/bin/herdr` (self-updates with `herdr update`; do not put it in `/usr/local`).
+
+- User unit: `~/.config/systemd/user/herdr.service` (`herdr server`)
+- Linger: `loginctl enable-linger irae` (root; already `yes` on this box)
+- Native resume: `[session] resume_agents_on_restore = true` in `~/.config/herdr/config.toml`
+- Grok hook: `herdr integration install grok`
+- Attach from Omarchy: `herdr --remote sheeta` (do not nest)
 
 ## Image timer
 
-systemd timer after the reboot window (e.g. 04:30):
+Versioned in this repo: `/data/stacks/host/`.
 
-`compose build --pull && compose pull && compose up -d`
+- Worker: `host/stacks-image-update.sh` (one compose project at a time: build --pull, pull, up -d)
+- Units: `host/stacks-image-update.service` + `.timer` (04:30 local, Persistent=)
+- Install (root, after review): `bash /data/stacks/host/install-root.sh`
+- There is no user unit. `host/install-user.sh` only explains that.
 
-TODO: units not written. No reboot-window timer found on disk.
+Leave the existing reboot-if-`/run/reboot-required` cron alone. Do not enable
+`Automatic-Reboot` in unattended-upgrades. Confirm that cron is before 04:30
+before enabling the timer.
+
+Units are **not** copied into `/etc/systemd/system/` until `install-root.sh` runs.
 
 ## Next box
 

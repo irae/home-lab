@@ -1,0 +1,36 @@
+[Unit]
+Description=Update Dockge compose stacks (build --pull, pull, up -d)
+Documentation=file:///data/stacks/host/README.md
+
+# Docker must be up. If the engine is down, this unit fails and the timer
+# will try again the next calendar fire (or at boot if Persistent=true on
+# the timer and this fire was missed).
+After=docker.service
+Requires=docker.service
+
+# This is not the reboot window. The existing root cron reboots only when
+# unattended-upgrades left /run/reboot-required. Leave that cron alone.
+# Schedule the timer after that cron's hour (plan example: 04:30).
+
+[Service]
+Type=oneshot
+
+# Lower priority so a 04:30 pull does not starve Dockge / Herdr.
+Nice=10
+
+WorkingDirectory=/data/stacks
+
+# Live copy is the git file. Review this path before enabling.
+ExecStart=/data/stacks/host/stacks-image-update.sh
+
+User=root
+Group=root
+
+# oneshot: the script's exit code is the unit result.
+# Do not set Restart= here. A failed run should stay failed until the next
+# timer fire, not loop.
+
+TimeoutStartSec=2h
+
+[Install]
+WantedBy=multi-user.target

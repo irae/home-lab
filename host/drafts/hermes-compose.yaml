@@ -1,0 +1,96 @@
+# DRAFT — not a Dockge stack. Do not copy this to /data/stacks/hermes/
+# until you have reviewed agents-plan.md and this file.
+#
+# Official docs:
+#   https://hermes-agent.nousresearch.com/docs/user-guide/docker
+#   https://github.com/NousResearch/hermes-agent/blob/main/docker-compose.yml
+#
+# Official compose uses network_mode: host and optionally docker.sock.
+# Both are refused here. This file is the sandbox shape from
+# sheeta-homelab.md:
+#   - no docker.sock
+#   - cap_drop ALL, then add back only what s6-overlay needs to drop uid
+#   - no-new-privileges
+#   - workspace bind is /data/agent only
+#   - runtime + secrets live in /data/volumes/hermes, not ~/
+#
+# Image pin: Docker Hub has latest, main, and calendar tags (v2026.9.7).
+# There is no floating major like dockge:1. Pin the release tag. Bump it
+# in this file when you want a new Hermes. The image timer will pull that
+# same tag, it will not float to a new release by itself.
+#
+# First boot (once, interactive, before compose up):
+#   mkdir -p /data/volumes/hermes
+#   docker run -it --rm \
+#     -e HERMES_UID=1000 \
+#     -e HERMES_GID=1000 \
+#     -v /data/volumes/hermes:/opt/data \
+#     nousresearch/hermes-agent:v2026.9.7 \
+#     setup
+# That writes /data/volumes/hermes/.env (API keys). Do not commit it.
+#
+# Then copy this file to /data/stacks/hermes/compose.yaml and deploy from
+# Dockge, or: docker compose -f ... up -d
+#
+# Local LLM on another Tailscale box: after setup, in
+# /data/volumes/hermes/config.yaml, set a custom OpenAI-compatible provider
+# to http://<tailscale-name-or-100.x>:PORT/v1
+# (llama-server and mlx-server both speak that). From a Linux bridge
+# container, 100.x of the other box usually routes via the host. Do not use
+# localhost — that is this container, not the GPU box.
+
+services:
+  hermes:
+    image: nousresearch/hermes-agent:v2026.9.7
+    restart: unless-stopped
+    command: ["gateway", "run"]
+
+    # Bridge, not host. Publish API only on loopback so the host agent can
+    # hand off. Reach it from Omarchy over SSH/Tailscale, not the public NIC.
+    ports:
+      - "127.0.0.1:8642:8642"
+      - "127.0.0.1:9119:9119"
+
+    volumes:
+      # Config, memory, sessions, .env. Not in git.
+      - /data/volumes/hermes:/opt/data
+      # Sandbox workspace. This is the only host tree Hermes may write.
+      - /data/agent:/data/agent
+      # No /var/run/docker.sock. The image contains docker-cli; without a
+      # socket it cannot drive the host engine.
+
+    environment:
+      - HERMES_UID=1000
+      - HERMES_GID=1000
+      - HERMES_DASHBOARD=1
+      # Dashboard is published on loopback. Bind 127.0.0.1 inside too so
+      # Hermes does not require a dashboard auth provider for a public bind.
+      - HERMES_DASHBOARD_HOST=127.0.0.1
+      # OpenAI-compatible API for the host agent to call. Key lives in the
+      # volume .env (API_SERVER_KEY), not in this file.
+      - API_SERVER_ENABLED=true
+      - API_SERVER_HOST=0.0.0.0
+
+    # Official entrypoint runs as root, chowns the volume, then s6-setuidgid
+    # down to hermes. cap_drop ALL alone breaks that. Keep the caps s6 needs
+    # to change uid/gid and ownership, drop the rest.
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+
+    # Playwright/Chromium, if you turn browser tools on later.
+    shm_size: 1g
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8642/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
