@@ -10,21 +10,31 @@ The image has the current Debian packages `git`, `stow`, `git-delta`, `git-extra
 
 ## PDF
 
-These read a text layer and open a PDF when the password is already known. They do not guess passwords. They do not OCR a scanned page.
+The password is always provided. Do not guess it. Do not search for it.
+
+Keep the original file. Write a second file with the password removed, and keep that unlocked file as the archive copy. Then read the unlocked file.
+
+```bash
+qpdf --password=PASSWORD --decrypt original.pdf archive.pdf
+```
+
+`qpdf` preserves the original content. Use `mutool clean -p PASSWORD -D original.pdf archive.pdf` only when `qpdf` refuses the file. Do not use `gs` for the archive copy. Ghostscript builds a new PDF and can drop structure.
+
+These tools read a text layer. They do not OCR a scanned page.
 
 Brazilian statements and bills use `R$`, dates as `DD/MM/YYYY`, a dot for thousands, and a comma for the decimal. `1.234,56` is one thousand two hundred thirty-four and fifty-six cents. Do not parse those amounts with an English float conversion.
 
-Try the tools in this order. Stop when the text keeps the columns.
+Read the unlocked file in this order. Stop when the text keeps the columns.
 
 | Tool | Package | Use |
 | --- | --- | --- |
-| `pdfinfo` | `poppler-utils` | Page count, encryption, and whether a password is required. `pdfinfo -upw PASSWORD file.pdf` |
-| `qpdf` | `qpdf` | Unlock and save a copy. `qpdf --password=PASSWORD --decrypt in.pdf out.pdf`. `qpdf --show-encryption file.pdf` shows the encryption. `qpdf --json file.pdf` dumps the object structure. |
-| `pdftotext` | `poppler-utils` | First text read. `pdftotext -upw PASSWORD -layout -enc UTF-8 file.pdf -`. If columns break, try `pdftotext -bbox-layout -enc UTF-8 file.pdf out.xml` for word positions. |
+| `pdfinfo` | `poppler-utils` | Page count and a check that the archive copy has no password. `pdfinfo archive.pdf` |
+| `qpdf` | `qpdf` | Write the archive copy. `qpdf --show-encryption original.pdf` shows the encryption before that. |
+| `pdftotext` | `poppler-utils` | First text read of the archive copy. `pdftotext -layout -enc UTF-8 archive.pdf -`. If columns break, try `pdftotext -bbox-layout -enc UTF-8 archive.pdf out.xml` for word positions. |
 | `pdftohtml` | `poppler-utils` | `pdftohtml -xml -enc UTF-8 file.pdf out.xml` when you need positions as XML. |
 | `pdfimages` | `poppler-utils` | `pdfimages -list file.pdf`. A page with only a large image and no text needs OCR. Stop there. |
-| `mutool` | `mupdf-tools` | `mutool draw -F stext -o out.xml file.pdf` writes structured text with positions. `mutool convert -o out.txt file.pdf` writes plain text. `mutool clean -p PASSWORD -D in.pdf out.pdf` rewrites an unlocked copy when `qpdf` refuses the file. |
-| `gs` | `ghostscript` | Last resort rewrite. `gs -q -sPDFPassword=PASSWORD -sDEVICE=pdfwrite -o out.pdf in.pdf`. This builds a new PDF and can drop structure. |
+| `mutool` | `mupdf-tools` | `mutool draw -F stext -o out.xml archive.pdf` writes structured text with positions. `mutool convert -o out.txt archive.pdf` writes plain text. `mutool clean -p PASSWORD -D original.pdf archive.pdf` is the fallback unlock. |
+| `gs` | `ghostscript` | Installed, but do not use it to make the archive copy. |
 | `pikepdf` | `python3-pikepdf` | Python wrapper for qpdf. `pikepdf.open(path, password=password)` then `save`. |
 | `pypdf` | `python3-pypdf` | `PdfReader(path, password=password)` and `page.extract_text()`. Weak on columns. |
 | `pdfminer` | `python3-pdfminer` | Layout-aware text. Use `extract_pages` when Poppler mixes columns. |
