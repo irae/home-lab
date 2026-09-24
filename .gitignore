@@ -1,5 +1,4 @@
 .env
 
 restricted-mail/app/
-local-llm-sandboxed/dotfiles/
 local-llm-sandboxed/models.json

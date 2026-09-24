@@ -1,9 +1,35 @@
 services:
-  local-llm-sandboxed:
-    build: .
+  home-init:
     image: local-llm-sandboxed:1
+    build:
+      context: .
+      additional_contexts:
+        dotfiles: /home/irae/.dotfiles
+    user: "1000:1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    network_mode: none
+    tmpfs:
+      - /tmp
+    volumes:
+      - /data/volumes/local-llm-sandboxed:/mnt/home
+    restart: "no"
+    entrypoint: ["/usr/local/bin/seed-home.sh"]
+
+  local-llm-sandboxed:
+    image: local-llm-sandboxed:1
+    build:
+      context: .
+      additional_contexts:
+        dotfiles: /home/irae/.dotfiles
     container_name: local-llm-sandboxed
     restart: unless-stopped
+    depends_on:
+      home-init:
+        condition: service_completed_successfully
     user: "1000:1000"
     read_only: true
     cap_drop:

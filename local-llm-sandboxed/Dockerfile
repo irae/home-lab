@@ -36,11 +36,12 @@ RUN mkdir -p /usr/share/omarchy/default/bash \
  && groupadd --gid 1000 haku \
  && useradd --uid 1000 --gid 1000 --home-dir /home/haku --create-home --shell /bin/bash haku
 
-COPY dotfiles /opt/dotfiles-seed
-COPY models.json /opt/models.json
+COPY --from=dotfiles . /home/haku/.dotfiles
+COPY models.json /home/haku/.pi/agent/models.json
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod 755 /usr/local/bin/entrypoint.sh \
- && chmod -R a+rX /opt/dotfiles-seed /opt/models.json
+COPY seed-home.sh /usr/local/bin/seed-home.sh
+RUN chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/seed-home.sh \
+ && chown -R haku:haku /home/haku
 
 USER 1000:1000
 WORKDIR /home/haku
