@@ -5,13 +5,21 @@ RUN apt-get update \
     ca-certificates \
     curl \
     fd-find \
+    ghostscript \
     git \
     git-delta \
     git-extras \
     jq \
+    mupdf-tools \
     openssh-client \
+    poppler-utils \
     python3 \
+    python3-pdfminer \
+    python3-pikepdf \
+    python3-pymupdf \
+    python3-pypdf \
     python3-venv \
+    qpdf \
     ripgrep \
     stow \
  && rm -rf /var/lib/apt/lists/*

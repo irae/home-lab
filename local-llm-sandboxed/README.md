@@ -8,6 +8,30 @@ The container user is `haku`, uid 1000. Host user `irae` has that uid, so volume
 
 The image has the current Debian packages `git`, `stow`, `git-delta`, `git-extras`, `jq`, `ripgrep`, `fd-find`, `python3`, and `python3-venv`. `fd-find` is linked as `fd`. Pi downloads `fd` and `rg` when they are missing, and this container has no path to GitHub. Node 24 comes from nvm at `/usr/local/nvm`. The build updates npm to latest, then runs `npm install -g --ignore-scripts @earendil-works/pi-coding-agent`.
 
+## PDF
+
+These read a text layer and open a PDF when the password is already known. They do not guess passwords. They do not OCR a scanned page.
+
+Brazilian statements and bills use `R$`, dates as `DD/MM/YYYY`, a dot for thousands, and a comma for the decimal. `1.234,56` is one thousand two hundred thirty-four and fifty-six cents. Do not parse those amounts with an English float conversion.
+
+Try the tools in this order. Stop when the text keeps the columns.
+
+| Tool | Package | Use |
+| --- | --- | --- |
+| `pdfinfo` | `poppler-utils` | Page count, encryption, and whether a password is required. `pdfinfo -upw PASSWORD file.pdf` |
+| `qpdf` | `qpdf` | Unlock and save a copy. `qpdf --password=PASSWORD --decrypt in.pdf out.pdf`. `qpdf --show-encryption file.pdf` shows the encryption. `qpdf --json file.pdf` dumps the object structure. |
+| `pdftotext` | `poppler-utils` | First text read. `pdftotext -upw PASSWORD -layout -enc UTF-8 file.pdf -`. If columns break, try `pdftotext -bbox-layout -enc UTF-8 file.pdf out.xml` for word positions. |
+| `pdftohtml` | `poppler-utils` | `pdftohtml -xml -enc UTF-8 file.pdf out.xml` when you need positions as XML. |
+| `pdfimages` | `poppler-utils` | `pdfimages -list file.pdf`. A page with only a large image and no text needs OCR. Stop there. |
+| `mutool` | `mupdf-tools` | `mutool draw -F stext -o out.xml file.pdf` writes structured text with positions. `mutool convert -o out.txt file.pdf` writes plain text. `mutool clean -p PASSWORD -D in.pdf out.pdf` rewrites an unlocked copy when `qpdf` refuses the file. |
+| `gs` | `ghostscript` | Last resort rewrite. `gs -q -sPDFPassword=PASSWORD -sDEVICE=pdfwrite -o out.pdf in.pdf`. This builds a new PDF and can drop structure. |
+| `pikepdf` | `python3-pikepdf` | Python wrapper for qpdf. `pikepdf.open(path, password=password)` then `save`. |
+| `pypdf` | `python3-pypdf` | `PdfReader(path, password=password)` and `page.extract_text()`. Weak on columns. |
+| `pdfminer` | `python3-pdfminer` | Layout-aware text. Use `extract_pages` when Poppler mixes columns. |
+| `pymupdf` | `python3-pymupdf` | Import `pymupdf`. `doc.authenticate(password)` then `page.get_text("dict")` for blocks and coordinates. |
+
+`pdftk` is not installed. `qpdf` covers the same unlock job without a Java runtime.
+
 ## Dotfiles
 
 The build copies `/home/irae/.dotfiles` to `/opt/dotfiles`. `.dockerignore` in that repo excludes `.git`. There is no startup copy.
