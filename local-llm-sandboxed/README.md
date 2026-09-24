@@ -10,9 +10,9 @@ The image has the current Debian packages `git`, `stow`, `git-delta`, `git-extra
 
 ## Dotfiles
 
-The build copies `/home/irae/.dotfiles`. `.dockerignore` in that repo excludes `.git`. The tree is `/home/haku/.dotfiles` in the image.
+The build copies `/home/irae/.dotfiles` to `/opt/dotfiles`. `.dockerignore` in that repo excludes `.git`. There is no startup copy.
 
-The home mount hides that path. `home-init` copies it onto the volume and stows `bash`, `git`, `bin`, and `agents`. It does not stow `omarchy`, `hypr`, `apps`, or `zsh`. The next `compose up` refreshes `~/.dotfiles` from the image. Other files in the home stay.
+The home mount hides `/home/haku`, so a copy there would not be visible. On the volume, `~/.dotfiles` is a symlink to `/opt/dotfiles`. Stow links (`bash`, `git`, `bin`, `agents`) point at that symlink. A rebuild replaces the tree in the image. The symlink stays. `omarchy`, `hypr`, `apps`, and `zsh` are not stowed.
 
 Build on the host. Dockge does not see `/home/irae`.
 
