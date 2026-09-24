@@ -4,6 +4,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    fd-find \
     git \
     git-delta \
     git-extras \
@@ -27,7 +28,8 @@ RUN mkdir -p "$NVM_DIR" \
  && ln -sf "$node_bin/node" /usr/local/bin/node \
  && ln -sf "$node_bin/npm" /usr/local/bin/npm \
  && ln -sf "$node_bin/npx" /usr/local/bin/npx \
- && ln -sf "$node_bin/pi" /usr/local/bin/pi
+ && ln -sf "$node_bin/pi" /usr/local/bin/pi \
+ && ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
 RUN mkdir -p /usr/share/omarchy/default/bash \
  && touch /usr/share/omarchy/default/bash/rc \
