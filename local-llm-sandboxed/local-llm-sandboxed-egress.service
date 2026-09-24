@@ -1,0 +1,12 @@
+[Unit]
+Description=Egress filter for local-llm-sandboxed
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/data/stacks/local-llm-sandboxed/sandbox-egress.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
