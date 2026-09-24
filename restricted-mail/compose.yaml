@@ -3,6 +3,7 @@ services:
     build:
       context: ${APP_DIR}
       target: prod
+    image: restricted-mail:prod
     restart: unless-stopped
     user: "10001:10001"
     read_only: true
