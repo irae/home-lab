@@ -1,0 +1,12 @@
+services:
+  set-brainz:
+    build:
+      context: ./app
+    image: set-brainz:prod
+    container_name: set-brainz
+    restart: unless-stopped
+    user: "1000:1000"
+    ports:
+      - 5004:8765
+    volumes:
+      - /data/volumes/set-brainz:/data
