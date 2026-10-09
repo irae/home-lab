@@ -1,0 +1,18 @@
+services:
+  sabnzbd:
+    image: linuxserver/sabnzbd
+    container_name: sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /data/volumes/sabnzbd/config:/config
+      - /data/volumes/sabnzbd/downloads:/incomplete-downloads #optional
+      - /data/volumes/sabnzbd/downloads:/downloads #optional
+    ports:
+      - 5003:8080
+    restart: unless-stopped
+networks:
+  dockge_default:
+    external: true
