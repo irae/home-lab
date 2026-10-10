@@ -50,6 +50,21 @@ The home mount hides `/home/haku`, so a copy there would not be visible. On the 
 
 Build on the host. Dockge does not see `/home/irae`.
 
+## Update
+
+The image is built from the Dockerfile in this directory. There is no separate app checkout.
+
+As `irae`, after `git pull` in `/data/stacks` when this directory changed:
+
+```bash
+cd /data/stacks/local-llm-sandboxed
+docker compose up -d --build
+```
+
+`docker compose build` and a Dockge Restart, Deploy, or Update leave the existing container on the old image. `up -d --build` replaces the container. The home volume stays.
+
+The egress filter is a separate root install. An image rebuild does not run that step again.
+
 ## Network
 
 The container has two fixed addresses:

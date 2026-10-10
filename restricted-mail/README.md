@@ -6,6 +6,8 @@ The checkout is `/data/stacks/restricted-mail/app`, owned by root, and it is a s
 
 ## Update
 
+This is the stack that must be updated as root. This host has no `sudo`. Open a root shell.
+
 Root pulls with the key at `/home/irae/.ssh/id_ed25519`. The client config is `/root/.ssh/config`, mode `600`. `/root/.ssh` is mode `700`.
 
 ```

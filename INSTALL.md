@@ -56,6 +56,12 @@ Host tool, not a container. User install at `~/.local/bin/herdr` (self-updates w
 - Grok hook: `herdr integration install grok`
 - Attach from Omarchy: `herdr --remote sheeta` (do not nest)
 
+## Update a stack
+
+Each stack README has the commands. `irae` runs them, except `restricted-mail`, which is root. This host has no `sudo`.
+
+`docker compose up -d --build` replaces a locally built container. `docker compose build` alone, and a Dockge Restart, Deploy, or Update, leave the old container running.
+
 ## Image timer
 
 Versioned in this repo: `/data/stacks/host/`.

@@ -19,6 +19,13 @@ A systemd **timer** that, once a day, walks every Dockge stack under
 That is the image-update path from `sheeta-homelab.md`. It is a host job, not
 a container.
 
+For a locally built image (`set-brainz:prod`, `restricted-mail:prod`,
+`local-llm-sandboxed:1`), `docker compose pull` fails. The worker then skips
+`up -d`, so the new image is built and not started. Update those stacks with
+the commands in each stack README. `dockge` and `sabnzbd` are registry images
+and follow the three commands above. The timer is not installed until
+`install-root.sh` runs.
+
 ## Files
 
 | File | Role |
