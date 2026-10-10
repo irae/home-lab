@@ -10,3 +10,4 @@ services:
       - 5004:8765
     volumes:
       - /data/volumes/set-brainz:/data
+      - /var/tmp/set-brainz:/data/tmp
