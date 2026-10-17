@@ -77,6 +77,14 @@ before enabling the timer.
 
 Units are **not** copied into `/etc/systemd/system/` until `install-root.sh` runs.
 
+## LAN file share
+
+Versioned in `/data/stacks/host/samba/`. SMB guest share for VLC on Apple TV. NetBIOS name `sheeta` on `enp1s0` and `enp2s0`. Allow `192.168.1.0/24` only. One share enabled: SABnzbd complete downloads.
+
+Install (root, after review): `bash /data/stacks/host/samba/install-root.sh`
+
+Samba is not installed until that script runs. Decision and steps: `host/samba/README.md`.
+
 ## Next box
 
 Same uid 1000, mount UUID, packages, Docker Engine, `compose up`, Herdr.

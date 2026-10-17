@@ -1,0 +1,44 @@
+#!/bin/sh
+# Sourced by dhclient-script. Use return, not exit.
+
+case "$0" in
+    *dhclient-script*)
+        ;;
+    *)
+        echo "samba-netbios: dhclient-script sources this file"
+        exit 1
+        ;;
+esac
+
+case "$interface" in
+    enp1s0|enp2s0)
+        ;;
+    *)
+        return 0
+        ;;
+esac
+
+case "$reason" in
+    BOUND|REBOOT)
+        ;;
+    RENEW|REBIND)
+        if [ -n "$old_ip_address" ] && [ "$new_ip_address" = "$old_ip_address" ]; then
+            return 0
+        fi
+        ;;
+    *)
+        return 0
+        ;;
+esac
+
+if [ ! -d /run/systemd/system ]; then
+    return 0
+fi
+
+if ! systemctl is-enabled smbd.service >/dev/null 2>&1; then
+    return 0
+fi
+
+logger -t samba-netbios "restart smbd and nmbd interface=${interface} reason=${reason} address=${new_ip_address}"
+systemctl restart smbd.service nmbd.service || true
+return 0

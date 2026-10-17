@@ -93,3 +93,15 @@ systemctl daemon-reload
 ```
 
 The copies in this git directory stay. That is the versioned source.
+
+## LAN file share
+
+Samba for VLC on Apple TV lives in `samba/`. The NetBIOS name is `sheeta`. One share is enabled. The first share is the SABnzbd complete directory.
+
+Review `samba/README.md`. Install later, as root:
+
+```
+bash /data/stacks/host/samba/install-root.sh
+```
+
+That script is not the image-timer installer. The image timer stays on `bash /data/stacks/host/install-root.sh`.
