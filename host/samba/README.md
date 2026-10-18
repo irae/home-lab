@@ -14,6 +14,7 @@ Nothing here is live until you run `install-root.sh` as root.
 - Do not share `/data/volumes/sabnzbd/config`. `sabnzbd.ini` holds server passwords and API keys.
 - Guest file access uses Unix user `irae`, because that user owns the download tree.
 - SMB signing is off. VLC guest sessions fail when the server requires signing.
+- Mac and tvOS clients get the Apple SMB extensions: `vfs objects = fruit streams_xattr` in the global section, with the fruit options from the Samba Mac OS X wiki. `fruit:posix_rename` is not in this Samba build.
 
 VLC lists the server in Local Network. The label is `SHEETA`. Open share `sabnzbd`. If VLC asks for a login, use the name `guest` and an empty password.
 
