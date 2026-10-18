@@ -41,11 +41,11 @@ then
     exit 1
 fi
 
-echo "install-root: apt-get install samba"
-DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends samba
+echo "install-root: apt-get install samba avahi-daemon"
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends samba avahi-daemon
 if [ $? -ne 0 ]
 then
-    echo "install-root: ERROR apt-get install samba failed"
+    echo "install-root: ERROR apt-get install samba avahi-daemon failed"
     exit 1
 fi
 
@@ -168,16 +168,35 @@ then
     exit 1
 fi
 
-echo "install-root: enable smbd and nmbd"
-systemctl enable smbd.service nmbd.service
+if [ -f /etc/avahi/avahi-daemon.conf ] && [ ! -f /etc/avahi/avahi-daemon.conf.debian-original ]
+then
+    echo "install-root: keep Debian avahi-daemon.conf as avahi-daemon.conf.debian-original"
+    cp -a /etc/avahi/avahi-daemon.conf /etc/avahi/avahi-daemon.conf.debian-original
+    if [ $? -ne 0 ]
+    then
+        echo "install-root: ERROR backup avahi-daemon.conf failed"
+        exit 1
+    fi
+fi
+
+echo "install-root: copy avahi-daemon.conf"
+cp "${SRC}/avahi-daemon.conf" /etc/avahi/avahi-daemon.conf
+if [ $? -ne 0 ]
+then
+    echo "install-root: ERROR copy avahi-daemon.conf failed"
+    exit 1
+fi
+
+echo "install-root: enable avahi-daemon smbd and nmbd"
+systemctl enable avahi-daemon.service smbd.service nmbd.service
 if [ $? -ne 0 ]
 then
     echo "install-root: ERROR enable samba failed"
     exit 1
 fi
 
-echo "install-root: start smbd and nmbd"
-systemctl restart smbd.service nmbd.service
+echo "install-root: start avahi-daemon smbd and nmbd"
+systemctl restart avahi-daemon.service smbd.service nmbd.service
 if [ $? -ne 0 ]
 then
     echo "install-root: ERROR start samba failed"

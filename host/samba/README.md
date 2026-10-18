@@ -8,7 +8,9 @@ Nothing here is live until you run `install-root.sh` as root.
 
 - Protocol: SMB2. Guest read. No password.
 - Name: NetBIOS `sheeta`, through `nmbd`. SMB1 stays off. NetBIOS is the name service, not the file dialect.
-- Gate: `smbd` binds `lo`, `enp1s0`, and `enp2s0`. `hosts allow` is `127.0.0.1` and `192.168.1.0/24`.
+- Gate: `smbd` binds `lo` and the address in `192.168.1.0/24`. That address is on `enp1s0` or `enp2s0`, where the cable is. `hosts allow` is `127.0.0.1` and `192.168.1.0/24`.
+- Do not put interface names in `interfaces`. Samba looks up a name with no address as a DNS name. Tailscale DNS takes 40 s to fail that lookup. Each Samba RPC process then starts late, and the Finder and VLC share list times out. A direct `smb://<sheeta-lan-ip>/sabnzbd` URL skips the share list, so it still works.
+- Bonjour: `avahi-daemon` on `enp1s0` and `enp2s0` only. `smbd` registers `_smb._tcp` through it. Finder and VLC on tvOS find `SHEETA` without NetBIOS.
 - One share at a time. The live share is the single link in `shares-enabled/`.
 - First share: `sabnzbd`. Path: `/data/volumes/sabnzbd/config/Downloads/complete`.
 - Do not share `/data/volumes/sabnzbd/config`. `sabnzbd.ini` holds server passwords and API keys.
@@ -33,6 +35,7 @@ A dhclient exit hook restarts `smbd` and `nmbd` when `enp1s0` or `enp2s0` gains 
 | `shares-enabled/sabnzbd.conf` | Link that selects the one live share |
 | `enable-share.sh` | Replace the link in the git tree. Does not install |
 | `install-root.sh` | Install the package, copy config, start `smbd` and `nmbd` |
+| `avahi-daemon.conf` | Limit Bonjour to the LAN ports |
 | `dhclient-samba-netbios` | Re-register the name after an address change |
 | `iface-enp2s0` | DHCP for the second port |
 
@@ -55,31 +58,32 @@ bash /data/stacks/host/samba/install-root.sh
 
 The script:
 
-- installs Debian package `samba` without recommended packages
+- installs Debian packages `samba` and `avahi-daemon` without recommended packages
 - disables `samba-ad-dc` when that unit exists
 - saves the original `/etc/samba/smb.conf` as `smb.conf.debian-original` once
 - copies this tree into `/etc/samba`
 - installs the dhclient hook and the `enp2s0` iface file
-- enables and starts `smbd` and `nmbd`
+- saves the original `/etc/avahi/avahi-daemon.conf` as `avahi-daemon.conf.debian-original` once, then copies `avahi-daemon.conf`
+- enables and starts `avahi-daemon`, `smbd`, and `nmbd`
 
 Check:
 
 ```
 nmblookup sheeta
 smbclient -L 127.0.0.1 -N
-systemctl status smbd nmbd
+systemctl status avahi-daemon smbd nmbd
 ```
 
-`nmblookup` prints the current LAN address for `sheeta`.
+`nmblookup` prints the current LAN address for `sheeta`. `smbclient -L` lists `sabnzbd` in less than a second.
 
 ## Uninstall
 
 ```
-systemctl disable --now smbd nmbd
+systemctl disable --now smbd nmbd avahi-daemon
 rm -f /etc/dhcp/dhclient-exit-hooks.d/samba-netbios
 rm -f /etc/network/interfaces.d/enp2s0
 rm -f /etc/samba/smb.conf /etc/samba/includes.conf
 rm -rf /etc/samba/shares-available /etc/samba/shares-enabled
 ```
 
-The files in this git directory stay. Restore `/etc/samba/smb.conf` from `smb.conf.debian-original` when you want the Debian file back. Package removal is separate: `apt-get remove samba`.
+The files in this git directory stay. Restore `/etc/samba/smb.conf` from `smb.conf.debian-original` when you want the Debian file back. Restore `/etc/avahi/avahi-daemon.conf` from `avahi-daemon.conf.debian-original`. Package removal is separate: `apt-get remove samba avahi-daemon`.
