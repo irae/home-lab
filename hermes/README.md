@@ -1,6 +1,7 @@
 # Hermes
 
-**Plan agreed; implementation pending. Unstaged. Nothing deployed or configured.**
+**Ready for your setup. Image pulled and private storage/web settings prepared;
+no provider login or Hermes services started.**
 
 ## Container and storage
 
@@ -28,8 +29,14 @@ Extra server ports require explicit mappings. Inventory: [root README](../README
 
 ## Setup and updates
 
-We prepare Compose, private storage, web settings/authentication, and pull the image.
-You run the official Docker setup wizard and provider login, then start the service:
+Storage and credentials are in `/data/volumes/hermes`. Web username: `irae`.
+Read your generated password locally (do not commit or share the output):
+
+```bash
+grep '^HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=' /data/volumes/hermes/.env
+```
+
+Run the official Docker setup wizard and provider login, then start the service:
 
 ```bash
 cd /data/stacks/hermes
@@ -53,11 +60,15 @@ docker compose up -d
 - Add local fallback with `hermes fallback` later, when the GPU box returns.
   Candidate: `http://arrietty:8080/v1`; verify endpoint, quota failover, and model capabilities.
 
-## Next steps
+## Files and restore
 
-1. Draft Compose/configuration following the official Docker docs; leave unstaged for review.
-2. After review, commit the first version; commit subsequent changes too.
-3. Deploy only when authorized; you perform setup yourself.
+- `compose.yaml`: official image, shared volume, web/API environment and port mappings.
+- `config.yaml`: starter settings copied to the volume once; edit the volume copy after setup.
+- `/data/volumes/hermes/.env`: web password/session secret, API key, and setup-managed secrets.
+  Compose reads this file too; changes require container recreation, not just a restart.
+- On another host, restore the private volume as UID/GID 1000 with mode `0700`
+  (secrets mode `0600`), pull the image, then `up -d`. Do not overwrite restored config/keys.
+- Subsequent stack changes are committed; provider setup remains your responsibility.
 
 [Docker setup](https://hermes-agent.nousresearch.com/docs/user-guide/docker) ·
 [Terminal backends](https://hermes-agent.nousresearch.com/docs/user-guide/configuration) ·
