@@ -35,7 +35,7 @@ and follow the three commands above. The timer is not installed until
 | `stacks-image-update.timer` | Fires the service at 04:30 local time |
 | `install-root.sh` | Copies the two unit files into `/etc/systemd/system/` and enables the timer |
 | `install-user.sh` | Explains why there is no user unit. Does not install anything. |
-| `drafts/hermes-compose.yaml` | **Not installed.** Review draft for the Hermes sandbox stack. |
+| `drafts/hermes-compose.yaml` | **Not installed.** Older Hermes draft; superseded by the review plan in [`../hermes/README.md`](../hermes/README.md). |
 
 The worker script stays in this git tree. The unit's `ExecStart=` points here
 (`/data/stacks/host/stacks-image-update.sh`). If you want a frozen copy under
