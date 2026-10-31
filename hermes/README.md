@@ -1,12 +1,11 @@
 # Hermes
 
-**Ready for your setup. Image pulled and private storage/web settings prepared;
-no provider login or Hermes services started.**
+**Hermes is running with browser chat. No external messaging platform is configured.**
 
 ## Container and storage
 
 - Official `nousresearch/hermes-agent:latest`; upstream init and `gateway run`.
-- No custom image, extra packages, dotfiles, or host credentials/Docker socket.
+- No custom Hermes image, extra packages, dotfiles, or host credentials/Docker socket.
 - `HERMES_UID=1000`, `HERMES_GID=1000`; no Compose `user:` override.
 - Normal Docker bridge/NAT; `restart: unless-stopped`; API healthcheck.
 - Bind `/data/volumes/hermes:/opt/data`, owned by `irae:irae`, mode `0700`.
@@ -18,13 +17,13 @@ no provider login or Hermes services started.**
 
 Use `http://sheeta:[port]/` over LAN or Tailscale:
 
-- **:5005** — web app (primary interface), container :9120.
-- **:5006** — dashboard / remote desktop backend, container :9119.
-- **:8642** — OpenAI-compatible API / health, container :8642.
+- **:5006** — dashboard, including browser chat, container :9119.
+- **:7390** — OpenAI-compatible API / health, container :8642.
 
-Host bindings and container listeners use `0.0.0.0`. Set web `public_url` to
-`http://sheeta:5005/`. Configure web/dashboard authentication, a persistent session
-secret, and an API key; secrets stay outside Git. No public ingress/router forwarding.
+Dashboard/API host bindings use `0.0.0.0`. Dashboard `public_url` is
+`http://sheeta:5006/`. Dashboard authentication, a persistent session secret, and
+an API key stay outside Git. No public ingress/router forwarding.
+The installed image has no separate `webapp` service; port 5005 was removed.
 Extra server ports require explicit mappings. Inventory: [root README](../README.md).
 
 ## Setup and updates
@@ -44,7 +43,7 @@ docker compose run --rm hermes setup
 docker compose up -d
 ```
 
-- Open `http://sheeta:5005/`.
+- Open `http://sheeta:5006/`.
 - Shell: `docker exec -it --user hermes hermes bash`.
 - Update: `docker compose pull`, then `docker compose up -d`; no in-container self-update.
 - Verify LAN/Tailscale access, authentication, persistence, and restart recovery.
@@ -62,7 +61,7 @@ docker compose up -d
 
 ## Files and restore
 
-- `compose.yaml`: official image, shared volume, web/API environment and port mappings.
+- `compose.yaml`: official Hermes image, private state bind, and dashboard/API port mappings.
 - `config.yaml`: starter settings copied to the volume once; edit the volume copy after setup.
 - `/data/volumes/hermes/.env`: web password/session secret, API key, and setup-managed secrets.
   Compose reads this file too; changes require container recreation, not just a restart.

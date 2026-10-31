@@ -14,9 +14,8 @@ services:
     env_file:
       - /data/volumes/hermes/.env
     ports:
-      - "0.0.0.0:5005:9120"
       - "0.0.0.0:5006:9119"
-      - "0.0.0.0:8642:8642"
+      - "0.0.0.0:7390:8642"
     volumes:
       - type: bind
         source: /data/volumes/hermes
