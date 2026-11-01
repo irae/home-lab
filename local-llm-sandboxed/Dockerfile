@@ -46,15 +46,17 @@ RUN mkdir -p /usr/share/omarchy/default/bash \
  && printf '\numask 077\n' >> /etc/bash.bashrc \
  && groupadd --gid 1000 haku \
  && useradd --uid 1000 --gid 1000 --home-dir /home/haku --create-home --shell /bin/bash haku \
- && usermod --password x root
+ && usermod --password x haku
 
 COPY --from=dotfiles . /opt/dotfiles
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY sshd-run.sh /usr/local/bin/sshd-run.sh
 COPY --from=sshkeys /authorized_keys /etc/ssh/authorized_keys
+COPY --chmod=644 root-shell-warning.sh /usr/local/share/root-shell-warning.sh
 RUN chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/sshd-run.sh \
  && chown root:root /etc/ssh/authorized_keys \
  && chmod 644 /etc/ssh/authorized_keys \
+ && printf '\n. /usr/local/share/root-shell-warning.sh\n' >> /etc/bash.bashrc \
  && chmod -R a+rX /opt/dotfiles \
  && chown -R haku:haku /home/haku /opt/dotfiles
 

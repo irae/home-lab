@@ -2,9 +2,9 @@
 
 Pi (`@earendil-works/pi-coding-agent`) in Debian trixie.
 
-The image retains the existing `haku` account (uid 1000); Compose runs the container as the existing `root` account so `docker exec` and SSH both open a root shell. Host user `irae` has uid 1000, so volume files belong to `irae`.
+The image uses the existing `haku` account (uid 1000) for Pi, coding, and SSH sessions. Compose starts the SSH daemon as `root`; SSH permits only `haku`, with root login disabled. Plain `docker exec` still defaults to root, so normal use must explicitly select `haku` and its HOME. Interactive root Bash shells show a maintenance-only warning. Host user `irae` has uid 1000, so volume files belong to `irae`.
 
-`/data/volumes/local-llm-sandboxed` is bind-mounted on `/home/haku`. The directory is mode `0700`, owner `irae:irae`. Root and the Docker daemon can still read it.
+`/data/volumes/local-llm-sandboxed` is bind-mounted on `/home/haku`. The directory is mode `0700`, owner `irae:irae`. Host root and the Docker daemon can still read it; container root remains subject to the reduced capability set.
 
 The image has the current Debian packages `git`, `stow`, `git-delta`, `git-extras`, `jq`, `ripgrep`, `fd-find`, `python3`, and `python3-venv`. `fd-find` is linked as `fd`. Pi downloads `fd` and `rg` when they are missing, and this container has no path to GitHub. Node 24 comes from nvm at `/usr/local/nvm`. The build updates npm to latest, then runs `npm install -g --ignore-scripts @earendil-works/pi-coding-agent`.
 
@@ -67,7 +67,7 @@ The egress filter is a separate root install. An image rebuild does not run that
 
 ## SSH
 
-The container runs OpenSSH on port 22; host port 2201 is published on all interfaces for LAN and Tailscale access. Connect with `ssh -p 2201 root@sheeta`. Authentication uses the existing public keys copied from `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild the image. Host keys persist in `/data/volumes/local-llm-sandboxed/ssh-hostkeys` across builds and container recreations.
+The container runs OpenSSH on port 22; host port 2201 is published on all interfaces for LAN and Tailscale access. Connect with `ssh -p 2201 haku@sheeta`. Password authentication and root SSH login are disabled; the root daemon drops privileges to `haku` for sessions. Compose retains `CHOWN` so sshd can assign `/dev/pts/*` terminals to `haku`; SSH validation must include an interactive PTY (`ssh -tt`), not just remote commands. Authentication uses the existing public keys copied from `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild the image. Host keys persist in `/data/volumes/local-llm-sandboxed/ssh-hostkeys` across builds and container recreations.
 
 ## Network
 
@@ -104,6 +104,8 @@ Then:
 docker compose -f /data/stacks/local-llm-sandboxed/compose.yaml up -d
 ```
 
-Enter with `docker exec -it local-llm-sandboxed bash`.
+Enter with `docker exec -it --user haku --env HOME=/home/haku local-llm-sandboxed bash`, or launch Pi directly with `docker exec -it --user haku --env HOME=/home/haku local-llm-sandboxed pi`.
+
+Use `docker exec -it --user root --workdir /root local-llm-sandboxed bash` only for deliberate maintenance, not agents. The read-only filesystem and reduced capabilities still apply to root; install system packages by rebuilding the image. Keep `/home/haku` user work owned by UID/GID 1000, but leave the root-owned `ssh-hostkeys` directory and private keys unchanged.
 
 This filter sees forwarded traffic. Traffic to sheeta itself does not pass through `DOCKER-USER`.

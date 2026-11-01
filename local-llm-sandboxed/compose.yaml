@@ -9,10 +9,14 @@ services:
     container_name: local-llm-sandboxed
     restart: unless-stopped
     user: "0:0"
+    environment:
+      SSHD_ALLOW_USERS: haku
+      SSHD_PERMIT_ROOT_LOGIN: "no"
     read_only: true
     cap_drop:
       - ALL
     cap_add:
+      - CHOWN
       - NET_BIND_SERVICE
       - SETUID
       - SETGID

@@ -19,7 +19,7 @@ Use `http://sheeta:[port]/` over LAN or Tailscale:
 
 - **:5006** — dashboard, including browser chat, container :9119.
 - **:7390** — OpenAI-compatible API / health, container :8642.
-- **:2202** — SSH as `root` on container port 22: `ssh -p 2202 root@sheeta`. Host keys persist in `/data/volumes/hermes/ssh-hostkeys` across builds and container recreations.
+- **:2202** — Key-only SSH as `hermes` on container port 22: `ssh -p 2202 hermes@sheeta`. Root SSH is disabled. Host keys persist in `/data/volumes/hermes/ssh-hostkeys` across builds and container recreations.
 
 Dashboard/API host bindings use `0.0.0.0`. Dashboard `public_url` is
 `http://sheeta:5006/`. Dashboard authentication, a persistent session secret, and
@@ -46,7 +46,15 @@ docker compose up -d
 ```
 
 - Open `http://sheeta:5006/`.
-- Shell: `docker exec -it hermes bash` or `ssh -p 2202 root@sheeta`.
+- Agent: `docker exec -it --user hermes --env HOME=/opt/data hermes hermes`.
+- Shell: `docker exec -it --user hermes --env HOME=/opt/data hermes bash` or `ssh -p 2202 hermes@sheeta`.
+  SSH shells load the existing s6 container environment with `s6-envdir`, including
+  `HERMES_HOME`, while preserving SSH session variables and setting `HOME=/opt/data`.
+  Interactive logins and remote commands use the same `/opt/data` configuration as
+  Docker exec. The login PATH is taken from the base image at build time.
+- Root maintenance only: `docker exec -it --user root hermes bash`. Interactive root
+  Bash shells display a warning and the normal-use commands; agents and coding work
+  should run as `hermes`. Upstream root initialization and supervision are unchanged.
 - Update: `docker compose build --pull`, then `docker compose up -d`; no in-container self-update.
 - Verify LAN/Tailscale access, authentication, persistence, and restart recovery.
 
@@ -64,6 +72,8 @@ docker compose up -d
 ## Files and restore
 
 - `Dockerfile`: local image with OpenSSH, reusing the sandbox SSH startup script.
+- `ssh-shell.sh`: SSH login shell loading the authoritative s6 environment before Bash.
+- `root-shell-warning.sh`: interactive root Bash maintenance warning and normal-use commands.
 - `compose.yaml`: local image build, private state bind, and dashboard/API/SSH port mappings.
 - `config.yaml`: starter settings copied to the volume once; edit the volume copy after setup.
 - `/data/volumes/hermes/.env`: web password/session secret, API key, and setup-managed secrets.
