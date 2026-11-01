@@ -1,0 +1,1 @@
+When adding SSH to a Docker stack, use container port 22 and the next available host port in the 22xx range. Reuse `local-llm-sandboxed/sshd-run.sh` and copy `/home/irae/.ssh/authorized_keys` at image build time. See [README.md](README.md) for current assignments and rebuild guidance.

@@ -18,6 +18,7 @@ Use `http://sheeta:<port>/` on LAN and Tailscale.
 | [Set-brainz](set-brainz/README.md) | 5004 | 8765 | All interfaces; `http://sheeta:5004/` | Running |
 | [Hermes dashboard / chat](hermes/README.md) | 5006 | 9119 | All IPv4 interfaces; `http://sheeta:5006/` | Running |
 | [Hermes API](hermes/README.md) | 7390 | 8642 | All IPv4 interfaces; `http://sheeta:7390/` | Running |
+| [Hermes SSH](hermes/README.md) | 2202 | 22 | All interfaces; `ssh -p 2202 root@sheeta` | Running |
 | [Local LLM sandbox](local-llm-sandboxed/README.md) | 2201 | 22 | All interfaces; `ssh -p 2201 root@sheeta` | Running |
 | TSE 2026 DuckDB | None | — | Container/CLI; separate checkout in `tse-2026/` | Running |
 
@@ -25,6 +26,8 @@ Use `http://sheeta:<port>/` on LAN and Tailscale.
 - Hermes binds `0.0.0.0` for LAN and Tailscale access; `sheeta` resolves on both.
   Web/API authentication remains required.
 - No router forwarding, public DNS, or public webhook ingress planned for Hermes.
+- Docker SSH daemons use container port 22 and the next available host port in the 22xx range. Current assignments: local-llm-sandboxed `2201`, Hermes `2202`.
+- Container images copy `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild; never commit private keys.
 - Keep this table updated when mappings change; recheck port availability before deployment.
 - These entries describe stack mappings, not every host listener. SSH and Samba are
   host services; Samba configuration is in [host/samba/README.md](host/samba/README.md).

@@ -4,8 +4,8 @@
 
 ## Container and storage
 
-- Official `nousresearch/hermes-agent:latest`; upstream init and `gateway run`.
-- No custom Hermes image, extra packages, dotfiles, or host credentials/Docker socket.
+- Local `hermes-ssh:latest` image based on `nousresearch/hermes-agent:latest`; upstream init and `gateway run` with supervised sshd.
+- The build reuses `local-llm-sandboxed/sshd-run.sh` and copies only `/home/irae/.ssh/authorized_keys` from its build context.
 - `HERMES_UID=1000`, `HERMES_GID=1000`; no Compose `user:` override.
 - Normal Docker bridge/NAT; `restart: unless-stopped`; API healthcheck.
 - Bind `/data/volumes/hermes:/opt/data`, owned by `irae:irae`, mode `0700`.
@@ -19,6 +19,7 @@ Use `http://sheeta:[port]/` over LAN or Tailscale:
 
 - **:5006** — dashboard, including browser chat, container :9119.
 - **:7390** — OpenAI-compatible API / health, container :8642.
+- **:2202** — SSH as `root` on container port 22: `ssh -p 2202 root@sheeta`.
 
 Dashboard/API host bindings use `0.0.0.0`. Dashboard `public_url` is
 `http://sheeta:5006/`. Dashboard authentication, a persistent session secret, and
@@ -35,17 +36,18 @@ Read your generated password locally (do not commit or share the output):
 grep '^HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=' /data/volumes/hermes/.env
 ```
 
-Run the official Docker setup wizard and provider login, then start the service:
+Build the local image, run the official Docker setup wizard and provider login, then start the service:
 
 ```bash
 cd /data/stacks/hermes
+docker compose build
 docker compose run --rm hermes setup
 docker compose up -d
 ```
 
 - Open `http://sheeta:5006/`.
-- Shell: `docker exec -it --user hermes hermes bash`.
-- Update: `docker compose pull`, then `docker compose up -d`; no in-container self-update.
+- Shell: `docker exec -it hermes bash` or `ssh -p 2202 root@sheeta`.
+- Update: `docker compose build --pull`, then `docker compose up -d`; no in-container self-update.
 - Verify LAN/Tailscale access, authentication, persistence, and restart recovery.
 
 ## Development and models
@@ -61,12 +63,13 @@ docker compose up -d
 
 ## Files and restore
 
-- `compose.yaml`: official Hermes image, private state bind, and dashboard/API port mappings.
+- `Dockerfile`: local image with OpenSSH, reusing the sandbox SSH startup script.
+- `compose.yaml`: local image build, private state bind, and dashboard/API/SSH port mappings.
 - `config.yaml`: starter settings copied to the volume once; edit the volume copy after setup.
 - `/data/volumes/hermes/.env`: web password/session secret, API key, and setup-managed secrets.
   Compose reads this file too; changes require container recreation, not just a restart.
 - On another host, restore the private volume as UID/GID 1000 with mode `0700`
-  (secrets mode `0600`), pull the image, then `up -d`. Do not overwrite restored config/keys.
+  (secrets mode `0600`), provide `/home/irae/.ssh/authorized_keys`, build the local image, then `up -d`. Do not overwrite restored config/keys.
 - Subsequent stack changes are committed; provider setup remains your responsibility.
 
 [Docker setup](https://hermes-agent.nousresearch.com/docs/user-guide/docker) ·

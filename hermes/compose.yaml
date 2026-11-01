@@ -1,6 +1,11 @@
 services:
   hermes:
-    image: nousresearch/hermes-agent:latest
+    image: hermes-ssh:latest
+    build:
+      context: .
+      additional_contexts:
+        sshkeys: /home/irae/.ssh
+        sshd: /data/stacks/local-llm-sandboxed
     container_name: hermes
     restart: unless-stopped
     command: ["gateway", "run"]
@@ -16,6 +21,7 @@ services:
     ports:
       - "0.0.0.0:5006:9119"
       - "0.0.0.0:7390:8642"
+      - "0.0.0.0:2202:22"
     volumes:
       - type: bind
         source: /data/volumes/hermes
