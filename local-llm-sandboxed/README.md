@@ -67,7 +67,7 @@ The egress filter is a separate root install. An image rebuild does not run that
 
 ## SSH
 
-The container runs OpenSSH on port 22; host port 2201 is published on all interfaces for LAN and Tailscale access. Connect with `ssh -p 2201 root@sheeta`. Authentication uses the existing public keys copied from `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild the image. The host key is generated in tmpfs at startup, so clients may see a changed host-key warning after container recreation.
+The container runs OpenSSH on port 22; host port 2201 is published on all interfaces for LAN and Tailscale access. Connect with `ssh -p 2201 root@sheeta`. Authentication uses the existing public keys copied from `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild the image. Host keys persist in `/data/volumes/local-llm-sandboxed/ssh-hostkeys` across builds and container recreations.
 
 ## Network
 

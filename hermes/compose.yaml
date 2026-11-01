@@ -28,6 +28,7 @@ services:
         target: /opt/data
         bind:
           create_host_path: false
+      - /data/volumes/hermes/ssh-hostkeys:/var/lib/ssh-hostkeys
     security_opt:
       - no-new-privileges:true
     shm_size: 1g
