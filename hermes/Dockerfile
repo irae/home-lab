@@ -13,4 +13,5 @@ RUN chmod 644 /etc/ssh/authorized_keys \
  && mkdir -p /etc/s6-overlay/s6-rc.d/sshd \
  && printf 'longrun\n' > /etc/s6-overlay/s6-rc.d/sshd/type \
  && ln -s /usr/local/bin/sshd-run.sh /etc/s6-overlay/s6-rc.d/sshd/run \
- && touch /etc/s6-overlay/s6-rc.d/user/contents.d/sshd
+ && touch /etc/s6-overlay/s6-rc.d/user/contents.d/sshd \
+ && printf 'PATH="/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:$PATH"\nexport PATH\n' > /etc/profile.d/hermes-path.sh
