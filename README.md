@@ -18,7 +18,7 @@ Use `http://sheeta:<port>/` on LAN and Tailscale.
 | [Set-brainz](set-brainz/README.md) | 5004 | 8765 | All interfaces; `http://sheeta:5004/` | Running |
 | [Hermes dashboard / chat](hermes/README.md) | 5006 | 9119 | All IPv4 interfaces; `http://sheeta:5006/` | Running |
 | [Hermes API](hermes/README.md) | 7390 | 8642 | All IPv4 interfaces; `http://sheeta:7390/` | Running |
-| [Local LLM sandbox](local-llm-sandboxed/README.md) | None | — | `docker exec -it local-llm-sandboxed bash` | Running |
+| [Local LLM sandbox](local-llm-sandboxed/README.md) | 2201 | 22 | Tailscale only; `ssh -p 2201 root@sheeta` | Running |
 | TSE 2026 DuckDB | None | — | Container/CLI; separate checkout in `tse-2026/` | Running |
 
 - All-interface bindings are **not** Tailscale-only; existing stack bindings are unchanged.

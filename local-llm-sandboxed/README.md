@@ -2,7 +2,7 @@
 
 Pi (`@earendil-works/pi-coding-agent`) in Debian trixie.
 
-The container user is `haku`, uid 1000. Host user `irae` has that uid, so volume files belong to `irae`.
+The image retains the existing `haku` account (uid 1000); Compose runs the container as the existing `root` account so `docker exec` and SSH both open a root shell. Host user `irae` has uid 1000, so volume files belong to `irae`.
 
 `/data/volumes/local-llm-sandboxed` is bind-mounted on `/home/haku`. The directory is mode `0700`, owner `irae:irae`. Root and the Docker daemon can still read it.
 
@@ -65,6 +65,10 @@ docker compose up -d --build
 
 The egress filter is a separate root install. An image rebuild does not run that step again.
 
+## SSH
+
+The container runs OpenSSH on port 22; host port 2201 is bound only to Sheeta's Tailscale address. Connect over Tailscale with `ssh -p 2201 root@sheeta`. Authentication uses the existing public keys copied from `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild the image. The host key is generated in tmpfs at startup, so clients may see a changed host-key warning after container recreation.
+
 ## Network
 
 The container has two fixed addresses:
@@ -74,7 +78,7 @@ The container has two fixed addresses:
 | `172.30.70.10` | `local-llm-sandboxed` (`172.30.70.0/24`) |
 | `172.19.0.250` | `restricted-mail` |
 
-No host ports. `pi` calls the GPU box at `http://arrietty:8080/v1`. The mail app is `http://restricted-mail:8080`.
+Host port 2201 is published only on Sheeta's Tailscale address; no other host ports are published. `pi` calls the GPU box at `http://arrietty:8080/v1`. The mail app is `http://restricted-mail:8080`.
 
 ## Egress
 

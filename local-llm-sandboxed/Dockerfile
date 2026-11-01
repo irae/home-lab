@@ -12,6 +12,7 @@ RUN apt-get update \
     jq \
     mupdf-tools \
     openssh-client \
+    openssh-server \
     poppler-utils \
     python3 \
     python3-pdfminer \
@@ -44,11 +45,16 @@ RUN mkdir -p /usr/share/omarchy/default/bash \
  && printf 'umask 077\n' > /etc/profile.d/umask.sh \
  && printf '\numask 077\n' >> /etc/bash.bashrc \
  && groupadd --gid 1000 haku \
- && useradd --uid 1000 --gid 1000 --home-dir /home/haku --create-home --shell /bin/bash haku
+ && useradd --uid 1000 --gid 1000 --home-dir /home/haku --create-home --shell /bin/bash haku \
+ && usermod --password x root
 
 COPY --from=dotfiles . /opt/dotfiles
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod 755 /usr/local/bin/entrypoint.sh \
+COPY sshd-run.sh /usr/local/bin/sshd-run.sh
+COPY --from=sshkeys /authorized_keys /etc/ssh/authorized_keys
+RUN chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/sshd-run.sh \
+ && chown root:root /etc/ssh/authorized_keys \
+ && chmod 644 /etc/ssh/authorized_keys \
  && chmod -R a+rX /opt/dotfiles \
  && chown -R haku:haku /home/haku /opt/dotfiles
 
