@@ -67,7 +67,7 @@ The egress filter is a separate root install. An image rebuild does not run that
 
 ## SSH
 
-The container runs OpenSSH on port 22; host port 2201 is bound only to Sheeta's Tailscale address. Connect over Tailscale with `ssh -p 2201 root@sheeta`. Authentication uses the existing public keys copied from `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild the image. The host key is generated in tmpfs at startup, so clients may see a changed host-key warning after container recreation.
+The container runs OpenSSH on port 22; host port 2201 is published on all interfaces for LAN and Tailscale access. Connect with `ssh -p 2201 root@sheeta`. Authentication uses the existing public keys copied from `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild the image. The host key is generated in tmpfs at startup, so clients may see a changed host-key warning after container recreation.
 
 ## Network
 
@@ -78,7 +78,7 @@ The container has two fixed addresses:
 | `172.30.70.10` | `local-llm-sandboxed` (`172.30.70.0/24`) |
 | `172.19.0.250` | `restricted-mail` |
 
-Host port 2201 is published only on Sheeta's Tailscale address; no other host ports are published. `pi` calls the GPU box at `http://arrietty:8080/v1`. The mail app is `http://restricted-mail:8080`.
+Host port 2201 is published on all interfaces; no other host ports are published. `pi` calls the GPU box at `http://arrietty:8080/v1`. The mail app is `http://restricted-mail:8080`.
 
 ## Egress
 
