@@ -17,6 +17,7 @@ services:
       - SETUID
       - SETGID
       - SYS_CHROOT
+      - AUDIT_WRITE
     security_opt:
       - no-new-privileges:true
     tmpfs:
