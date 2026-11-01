@@ -19,7 +19,7 @@ Use `http://sheeta:[port]/` over LAN or Tailscale:
 
 - **:5006** — dashboard, including browser chat, container :9119.
 - **:7390** — OpenAI-compatible API / health, container :8642.
-- **:2202** — SSH as `root` on container port 22: `ssh -p 2202 root@sheeta`.
+- **:2202** — SSH as `root` on container port 22: `ssh -p 2202 root@sheeta`. Host keys are generated in tmpfs, so container recreation changes the SSH host key; remove an old entry with `ssh-keygen -R '[sheeta]:2202'`.
 
 Dashboard/API host bindings use `0.0.0.0`. Dashboard `public_url` is
 `http://sheeta:5006/`. Dashboard authentication, a persistent session secret, and
