@@ -1,7 +1,7 @@
 # sheeta / home-lab
 
 Local checkout: `/data/stacks` (Dockge stacks dir).
-GitHub: private repo `home-lab` (Free plan allows unlimited private repos).
+GitHub: public repo `home-lab`.
 
 ## Host
 

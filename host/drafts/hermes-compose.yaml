@@ -1,13 +1,12 @@
 # DRAFT — not a Dockge stack. Do not copy this to /data/stacks/hermes/
-# until you have reviewed agents-plan.md and this file.
+# until you have reviewed this file.
 #
 # Official docs:
 #   https://hermes-agent.nousresearch.com/docs/user-guide/docker
 #   https://github.com/NousResearch/hermes-agent/blob/main/docker-compose.yml
 #
 # Official compose uses network_mode: host and optionally docker.sock.
-# Both are refused here. This file is the sandbox shape from
-# sheeta-homelab.md:
+# Both are refused here. This file uses this sandbox shape:
 #   - no docker.sock
 #   - cap_drop ALL, then add back only what s6-overlay needs to drop uid
 #   - no-new-privileges

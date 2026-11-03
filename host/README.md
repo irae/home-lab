@@ -16,8 +16,7 @@ A systemd **timer** that, once a day, walks every Dockge stack under
 2. `docker compose pull`
 3. `docker compose up -d`
 
-That is the image-update path from `sheeta-homelab.md`. It is a host job, not
-a container.
+It is a host job, not a container.
 
 For a locally built image (`set-brainz:prod`, `restricted-mail:prod`,
 `local-llm-sandboxed:1`, `hermes-ssh:latest`), `docker compose pull` fails. The
