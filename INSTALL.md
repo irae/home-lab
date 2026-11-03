@@ -1,6 +1,6 @@
 # sheeta / home-lab
 
-Local checkout: `/data/stacks` (Dockge stacks dir).
+Local checkout: `/data/stacks` (stacks dir).
 GitHub: public repo `home-lab`.
 
 ## Host
@@ -42,7 +42,7 @@ UUID=<data-disk-uuid> /data ext4 defaults,noatime 0 2
 ## Stacks
 
 - One dir per project: `/data/stacks/<name>/compose.yaml`
-- Image pins: floating major (`louislam/dockge:1`), not `latest`, not digests
+- Images: `:latest` or no tag, not pinned; see [README.md](README.md)
 - `restart: unless-stopped` + healthcheck
 - Binds under `/data/volumes/<name>`
 
@@ -60,7 +60,7 @@ Host tool, not a container. User install at `~/.local/bin/herdr` (self-updates w
 
 Each stack README has the commands. `irae` runs them, except `restricted-mail`, which is root. This host has no `sudo`.
 
-`docker compose up -d --build` replaces a locally built container. `docker compose build` alone, and a Dockge Restart, Deploy, or Update, leave the old container running.
+`docker compose up -d --build` replaces a locally built container. `docker compose build` alone and `docker compose restart` leave the old container running.
 
 ## Image timer
 

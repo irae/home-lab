@@ -1,0 +1,82 @@
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 5001:8080
+    volumes:
+      - /data/volumes/dozzle:/data
+    environment:
+      DOCKER_HOST: tcp://socket-proxy:2375
+      DOZZLE_AUTH_PROVIDER: simple
+      DOZZLE_AUTH_TTL: 48h
+      # Env values lock these settings; the setup wizard and dozzle.yml cannot change them.
+      DOZZLE_ENABLE_ACTIONS: "false"
+      DOZZLE_ENABLE_SHELL: "false"
+      DOZZLE_ENABLE_MCP: "false"
+      DOZZLE_AUTO_UPDATE: "off"
+      DOZZLE_AUTO_CLEANUP: "off"
+      DOZZLE_DISABLE_SETUP_WIZARD: "true"
+      DOZZLE_NO_ANALYTICS: "true"
+      DOZZLE_RELEASE_CHECK_MODE: manual
+      DOZZLE_IMAGE_CHECK_MODE: "off"
+    networks:
+      - default
+      - docker-api
+    depends_on:
+      - socket-proxy
+
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      CONTAINERS: 1
+      ALLOW_LOGS: 1
+      INFO: 1
+      EVENTS: 1
+      PING: 1
+      VERSION: 1
+      POST: 0
+      EXEC: 0
+      ALLOW_ARCHIVE: 0
+      ALLOW_EXPORT: 0
+      ALLOW_CHANGES: 0
+      ALLOW_TOP: 0
+      ALLOW_START: 0
+      ALLOW_STOP: 0
+      ALLOW_RESTARTS: 0
+      ALLOW_PAUSE: 0
+      ALLOW_UNPAUSE: 0
+      AUTH: 0
+      BUILD: 0
+      COMMIT: 0
+      CONFIGS: 0
+      DISTRIBUTION: 0
+      IMAGES: 0
+      NETWORKS: 0
+      NODES: 0
+      PLUGINS: 0
+      SECRETS: 0
+      SERVICES: 0
+      SESSION: 0
+      SWARM: 0
+      SYSTEM: 0
+      TASKS: 0
+      VOLUMES: 0
+    networks:
+      - docker-api
+
+networks:
+  docker-api:
+    internal: true

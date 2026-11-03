@@ -1,4 +1,4 @@
-# DRAFT — not a Dockge stack. Do not copy this to /data/stacks/hermes/
+# DRAFT — not a stack. Do not copy this to /data/stacks/hermes/
 # until you have reviewed this file.
 #
 # Official docs:
@@ -14,7 +14,7 @@
 #   - runtime + secrets live in /data/volumes/hermes, not ~/
 #
 # Image pin: Docker Hub has latest, main, and calendar tags (v2026.9.7).
-# There is no floating major like dockge:1. Pin the release tag. Bump it
+# There is no floating major tag. Pin the release tag. Bump it
 # in this file when you want a new Hermes. The image timer will pull that
 # same tag, it will not float to a new release by itself.
 #
@@ -28,8 +28,8 @@
 #     setup
 # That writes /data/volumes/hermes/.env (API keys). Do not commit it.
 #
-# Then copy this file to /data/stacks/hermes/compose.yaml and deploy from
-# Dockge, or: docker compose -f ... up -d
+# Then copy this file to /data/stacks/hermes/compose.yaml and deploy with
+# docker compose -f ... up -d
 #
 # Local LLM on another Tailscale box: after setup, in
 # /data/volumes/hermes/config.yaml, set a custom OpenAI-compatible provider

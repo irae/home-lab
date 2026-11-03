@@ -14,4 +14,4 @@ cd /data/stacks/set-brainz
 docker compose up -d --build
 ```
 
-`docker compose build` and a Dockge Restart, Deploy, or Update leave the existing container on its old image. `up -d --build` replaces the container. The data directory stays.
+`docker compose build` and `docker compose restart` leave the existing container on its old image. `up -d --build` replaces the container. The data directory stays.

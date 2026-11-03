@@ -13,6 +13,3 @@ services:
     ports:
       - 5003:8080
     restart: unless-stopped
-networks:
-  dockge_default:
-    external: true

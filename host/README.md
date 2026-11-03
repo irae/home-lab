@@ -1,7 +1,7 @@
 # Host units (review, then install)
 
-This directory is **not** a Dockge stack. There is no `compose.yaml` here on
-purpose, so Dockge will not list `host` as a project.
+This directory is **not** a stack. There is no `compose.yaml` here on
+purpose, so the image timer skips `host`.
 
 Nothing in this folder is live on the box until you run `install-root.sh` as
 root. The scripts never copy themselves into systemd. You review, then you
@@ -9,7 +9,7 @@ install.
 
 ## What this is
 
-A systemd **timer** that, once a day, walks every Dockge stack under
+A systemd **timer** that, once a day, walks every stack under
 `/data/stacks/*/compose.yaml` and runs three separate compose commands:
 
 1. `docker compose build --pull`
@@ -21,7 +21,7 @@ It is a host job, not a container.
 For a locally built image (`set-brainz:prod`, `restricted-mail:prod`,
 `local-llm-sandboxed:1`, `hermes-ssh:latest`), `docker compose pull` fails. The
 worker then skips `up -d`, so the new image is built and not started. Update
-those stacks with the commands in each stack README. `dockge` and `sabnzbd` are
+those stacks with the commands in each stack README. `dozzle` and `sabnzbd` are
 registry images and follow the three commands above. The timer is not installed
 until `install-root.sh` runs.
 

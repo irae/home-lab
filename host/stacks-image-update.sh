@@ -1,5 +1,5 @@
 #!/bin/bash
-# Update every Dockge compose project under /data/stacks.
+# Update every compose project under /data/stacks.
 #
 # For each directory that contains a compose.yaml, run three commands in
 # order, as separate steps (not chained):
@@ -12,7 +12,7 @@
 # depend on a user session.
 #
 # Failures: if one stack fails, log it and continue to the next stack so a
-# broken project does not block Dockge or others. The script exits 1 if any
+# broken project does not block other projects. The script exits 1 if any
 # stack failed, so the systemd unit records a failure.
 #
 # There is no retry loop. There is no "already up to date" shortcut.

@@ -27,7 +27,7 @@ docker compose up -d --build
 
 Run Compose in this directory. The app checkout has no `compose.yaml` and no `.env`.
 
-`docker compose build` and a Dockge Restart, Deploy, or Update leave the existing container on its old image. `up -d --build` replaces the container.
+`docker compose build` and `docker compose restart` leave the existing container on its old image. `up -d --build` replaces the container.
 
 ```bash
 docker inspect restricted-mail-restricted-mail-1 --format '{{.Image}}'

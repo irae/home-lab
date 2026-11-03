@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily image update for Dockge compose stacks
+Description=Daily image update for compose stacks
 Documentation=file:///data/stacks/host/README.md
 
 [Timer]

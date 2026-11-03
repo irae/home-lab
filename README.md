@@ -14,7 +14,7 @@ Host access: on the LAN, use `<host>.local` (mDNS). Elsewhere, use the bare host
 
 | Stack / service | Host port | Container port | Host bind / access | Status |
 | --- | --- | --- | --- | --- |
-| [Dockge](dockge/README.md) | 5001 | 5001 | All interfaces; `http://sheeta:5001/` | Running |
+| [Dozzle](dozzle/README.md) | 5001 | 8080 | All interfaces; `http://sheeta:5001/` (login required, read-only) | Ready for setup |
 | [Restricted mail](restricted-mail/README.md) | 5002 | 8080 | All IPv4 interfaces; `http://sheeta:5002/` | Running |
 | [SABnzbd](sabnzbd/README.md) | 5003 | 8080 | All interfaces; `http://sheeta:5003/` | Running |
 | [Set-brainz](set-brainz/README.md) | 5004 | 8765 | All interfaces; `http://sheeta:5004/` | Running |

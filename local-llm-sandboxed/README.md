@@ -48,7 +48,7 @@ The build copies `/home/irae/.dotfiles` to `/opt/dotfiles`. `.dockerignore` in t
 
 The home mount hides `/home/haku`, so a copy there would not be visible. On the volume, `~/.dotfiles` is a symlink to `/opt/dotfiles`. Stow links (`bash`, `git`, `bin`, `agents`) point at that symlink. A rebuild replaces the tree in the image. The symlink stays. `omarchy`, `hypr`, `apps`, and `zsh` are not stowed.
 
-Build on the host. Dockge does not see `/home/irae`.
+Build on the host; the build reads `/home/irae`.
 
 ## Update
 
@@ -61,7 +61,7 @@ cd /data/stacks/local-llm-sandboxed
 docker compose up -d --build
 ```
 
-`docker compose build` and a Dockge Restart, Deploy, or Update leave the existing container on the old image. `up -d --build` replaces the container. The home volume stays.
+`docker compose build` and `docker compose restart` leave the existing container on the old image. `up -d --build` replaces the container. The home volume stays.
 
 The egress filter is a separate root install. An image rebuild does not run that step again. After `sandbox-egress.sh` changes, run `systemctl restart local-llm-sandboxed-egress.service` as root.
 

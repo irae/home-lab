@@ -1,5 +1,5 @@
 [Unit]
-Description=Update Dockge compose stacks (build --pull, pull, up -d)
+Description=Update compose stacks (build --pull, pull, up -d)
 Documentation=file:///data/stacks/host/README.md
 
 # Docker must be up. If the engine is down, this unit fails and the timer
@@ -15,7 +15,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 
-# Lower priority so a 04:30 pull does not starve Dockge / Herdr.
+# Lower priority so a 04:30 pull does not starve other services / Herdr.
 Nice=10
 
 WorkingDirectory=/data/stacks
