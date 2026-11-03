@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+: "${SSHD_ALLOW_USERS:?must list the SSH users}"
 mkdir -p /run/sshd /var/lib/ssh-hostkeys
 chmod 755 /run/sshd
 for type in ed25519 rsa; do
@@ -17,6 +18,6 @@ exec /usr/sbin/sshd -D -e -o PidFile=/tmp/sshd.pid \
     -o AuthorizedKeysFile=/etc/ssh/authorized_keys \
     -o PasswordAuthentication=no \
     -o KbdInteractiveAuthentication=no \
-    -o PermitRootLogin="${SSHD_PERMIT_ROOT_LOGIN:-prohibit-password}" \
-    -o AllowUsers="${SSHD_ALLOW_USERS:-root}" \
+    -o PermitRootLogin="${SSHD_PERMIT_ROOT_LOGIN:-no}" \
+    -o AllowUsers="$SSHD_ALLOW_USERS" \
     -o UsePAM=no
