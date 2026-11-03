@@ -10,6 +10,8 @@ TCP ports below are Docker-published host ports. **Planned** and **Ready for set
 entries are not running.
 Use `http://sheeta:<port>/` on LAN and Tailscale.
 
+Host access: on the LAN, use `<host>.local` (mDNS). Elsewhere, use the bare hostname through Tailscale MagicDNS. Do not use the tailnet suffix, because it differs between tailnets. Do not use fixed IPs. Firewall rules use CIDRs.
+
 | Stack / service | Host port | Container port | Host bind / access | Status |
 | --- | --- | --- | --- | --- |
 | [Dockge](dockge/README.md) | 5001 | 5001 | All interfaces; `http://sheeta:5001/` | Running |
