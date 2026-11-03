@@ -68,7 +68,7 @@ Versioned in this repo: `/data/stacks/host/`.
 
 - Worker: `host/stacks-image-update.sh` (one compose project at a time: build --pull, pull, up -d)
 - Units: `host/stacks-image-update.service` + `.timer` (04:30 local, Persistent=)
-- Install (root, after review): `bash /data/stacks/host/install-root.sh`
+- Install (root, after review): `bash /data/stacks/host/install-root.sh`. It also turns off LAN IPv6; see [host/README.md](host/README.md).
 - There is no user unit. `host/install-user.sh` only explains that.
 
 Leave the existing reboot-if-`/run/reboot-required` cron alone. Do not enable

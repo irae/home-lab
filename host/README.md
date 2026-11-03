@@ -32,7 +32,8 @@ until `install-root.sh` runs.
 | `stacks-image-update.sh` | The worker. Verbose bash. This path is what the unit will exec. |
 | `stacks-image-update.service` | systemd oneshot that calls the script |
 | `stacks-image-update.timer` | Fires the service at 04:30 local time |
-| `install-root.sh` | Copies the two unit files into `/etc/systemd/system/` and enables the timer |
+| `install-root.sh` | Copies the two unit files into `/etc/systemd/system/` and enables the timer; installs and applies the sysctl file |
+| `90-lan-ipv6-off.conf` | Turns off IPv6 on `enp1s0` and `enp2s0`. Docker publishes ports on `[::]`, so a router that gives out IPv6 would expose them. `tailscale0` keeps IPv6. |
 | `install-user.sh` | Explains why there is no user unit. Does not install anything. |
 | `drafts/hermes-compose.yaml` | **Not installed.** Older Hermes draft; superseded by the review plan in [`../hermes/README.md`](../hermes/README.md). |
 
@@ -65,6 +66,7 @@ That script:
 - copies the `.service` and `.timer` into `/etc/systemd/system/`
 - runs `daemon-reload`
 - enables the timer
+- copies `90-lan-ipv6-off.conf` into `/etc/sysctl.d/` and applies it
 - does **not** start a compose update right now
 - does **not** touch the reboot cron
 

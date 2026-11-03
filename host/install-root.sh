@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install the stacks image-update systemd units.
+# Install the stacks image-update systemd units and the LAN IPv6-off sysctl.
 #
 # Run as root (sudo is not installed on this box).
 # This script copies unit files into /etc/systemd/system/ and enables the
@@ -13,6 +13,7 @@ UNIT_SRC="/data/stacks/host"
 UNIT_DST="/etc/systemd/system"
 SERVICE_NAME="stacks-image-update.service"
 TIMER_NAME="stacks-image-update.timer"
+SYSCTL_NAME="90-lan-ipv6-off.conf"
 
 echo "install-root: start"
 
@@ -51,6 +52,22 @@ systemctl enable "${TIMER_NAME}"
 if [ $? -ne 0 ]
 then
     echo "install-root: ERROR enable timer failed"
+    exit 1
+fi
+
+echo "install-root: copy ${SYSCTL_NAME}"
+cp "${UNIT_SRC}/${SYSCTL_NAME}" "/etc/sysctl.d/${SYSCTL_NAME}"
+if [ $? -ne 0 ]
+then
+    echo "install-root: ERROR copy sysctl failed"
+    exit 1
+fi
+
+echo "install-root: apply ${SYSCTL_NAME}"
+sysctl -p "/etc/sysctl.d/${SYSCTL_NAME}"
+if [ $? -ne 0 ]
+then
+    echo "install-root: ERROR apply sysctl failed"
     exit 1
 fi
 
