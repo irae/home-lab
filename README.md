@@ -30,6 +30,7 @@ Host access: on the LAN, use `<host>.local` (mDNS). Elsewhere, use the bare host
 - No router forwarding, public DNS, or public webhook ingress planned for Hermes.
 - Docker SSH daemons use container port 22 and the next available host port in the 22xx range. Current assignments: local-llm-sandboxed `2201`, Hermes `2202`.
 - Container images copy `/home/irae/.ssh/authorized_keys` at build time. Add keys there and rebuild; never commit private keys.
+- Images use `:latest` or no tag by default. Do not pin a major version. When an update breaks a stack, fix the stack.
 - Keep this table updated when mappings change; recheck port availability before deployment.
 - These entries describe stack mappings, not every host listener. SSH and Samba are
   host services; Samba configuration is in [host/samba/README.md](host/samba/README.md).
