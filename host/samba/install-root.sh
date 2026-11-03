@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install the sheeta LAN Samba server.
 #
-# Run as root in a root SSH session (sudo is not installed on this box).
+# Run as root (sudo is not installed on this box).
 # Review /data/stacks/host/samba/README.md before you run this.
 #
 # The script installs the samba package, copies this tree into /etc/samba,

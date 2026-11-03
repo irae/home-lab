@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install the stacks image-update systemd units.
 #
-# Run as root in a root SSH session (sudo is not installed on this box).
+# Run as root (sudo is not installed on this box).
 # This script copies unit files into /etc/systemd/system/ and enables the
 # timer. It does not start a compose update now. It does not touch the
 # reboot cron. It does not copy the worker script; the unit execs the git

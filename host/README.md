@@ -54,7 +54,7 @@ the timer file, then install.
 
 ## Install (after you review)
 
-Root SSH session, not sudo (sudo is not installed):
+Run as root, not sudo (sudo is not installed):
 
 ```
 bash /data/stacks/host/install-root.sh

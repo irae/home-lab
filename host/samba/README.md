@@ -50,7 +50,7 @@ A dhclient exit hook restarts `smbd` and `nmbd` when `enp1s0` or `enp2s0` gains 
 
 ## Install
 
-Root SSH session:
+Run as root:
 
 ```
 bash /data/stacks/host/samba/install-root.sh
