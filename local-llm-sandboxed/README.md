@@ -63,7 +63,7 @@ docker compose up -d --build
 
 `docker compose build` and a Dockge Restart, Deploy, or Update leave the existing container on the old image. `up -d --build` replaces the container. The home volume stays.
 
-The egress filter is a separate root install. An image rebuild does not run that step again.
+The egress filter is a separate root install. An image rebuild does not run that step again. After `sandbox-egress.sh` changes, run `systemctl restart local-llm-sandboxed-egress.service` as root.
 
 ## SSH
 
@@ -86,7 +86,7 @@ Compose has no destination limit. An internal network would also block the GPU b
 
 `DOCKER-USER` is an iptables chain Docker creates in the filter table. It is not a Compose field. Rules there run before Docker's own forward rules. A drop with no source match would hit every container.
 
-`install-root.sh` installs a systemd unit. The unit runs `sandbox-egress.sh` after `docker.service`. The script creates chain `SANDBOX-EGRESS` and jumps there from `DOCKER-USER` for source `172.30.70.10` and source `172.19.0.250` only. That chain name exists only in `sandbox-egress.sh`.
+`install-root.sh` installs a systemd unit. The unit runs `sandbox-egress.sh` after `docker.service`. The script creates chain `SANDBOX-EGRESS` and jumps there from `DOCKER-USER` for source `172.30.70.10` and source `172.19.0.250` only. Those chain names exist only in `sandbox-egress.sh`.
 
 The subnet keeps `172.30.70.10` stable. The match is those two addresses, not the subnet. `172.19.0.2` (the mail container) is not matched. Other stacks keep normal internet.
 
@@ -108,4 +108,4 @@ Enter with `docker exec -it --user haku --env HOME=/home/haku local-llm-sandboxe
 
 Use `docker exec -it --user root --workdir /root local-llm-sandboxed bash` only for deliberate maintenance, not agents. The read-only filesystem and reduced capabilities still apply to root; install system packages by rebuilding the image. Keep `/home/haku` user work owned by UID/GID 1000, but leave the root-owned `ssh-hostkeys` directory and private keys unchanged.
 
-This filter sees forwarded traffic. Traffic to sheeta itself does not pass through `DOCKER-USER`.
+`DOCKER-USER` sees only forwarded traffic. Traffic to sheeta itself, such as the bridge gateway or a published port, goes through `INPUT`, so the script also jumps from `INPUT` to chain `SANDBOX-INPUT` for the same two sources; that chain allows replies and drops the rest.
