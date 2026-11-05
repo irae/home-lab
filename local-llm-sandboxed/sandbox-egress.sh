@@ -1,5 +1,7 @@
 #!/bin/sh
 set -eu
+iptables -t mangle -C PREROUTING -s 172.30.70.10/32 -m addrtype --dst-type LOCAL -m conntrack ! --ctstate ESTABLISHED,RELATED -j DROP || iptables -t mangle -I PREROUTING 1 -s 172.30.70.10/32 -m addrtype --dst-type LOCAL -m conntrack ! --ctstate ESTABLISHED,RELATED -j DROP
+iptables -t mangle -C PREROUTING -s 172.19.0.250/32 -m addrtype --dst-type LOCAL -m conntrack ! --ctstate ESTABLISHED,RELATED -j DROP || iptables -t mangle -I PREROUTING 1 -s 172.19.0.250/32 -m addrtype --dst-type LOCAL -m conntrack ! --ctstate ESTABLISHED,RELATED -j DROP
 iptables -N SANDBOX-EGRESS 2>/dev/null || true
 iptables -F SANDBOX-EGRESS
 iptables -A SANDBOX-EGRESS -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN

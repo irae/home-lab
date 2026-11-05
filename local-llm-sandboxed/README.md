@@ -108,4 +108,4 @@ Enter with `docker exec -it --user haku --env HOME=/home/haku local-llm-sandboxe
 
 Use `docker exec -it --user root --workdir /root local-llm-sandboxed bash` only for deliberate maintenance, not agents. The read-only filesystem and reduced capabilities still apply to root; install system packages by rebuilding the image. Keep `/home/haku` user work owned by UID/GID 1000, but leave the root-owned `ssh-hostkeys` directory and private keys unchanged.
 
-`DOCKER-USER` sees only forwarded traffic. Traffic to sheeta itself, such as the bridge gateway or a published port, goes through `INPUT`, so the script also jumps from `INPUT` to chain `SANDBOX-INPUT` for the same two sources; that chain allows replies and drops the rest.
+`DOCKER-USER` sees only forwarded traffic. Docker translates published ports before that chain, so they do not pass through `INPUT`. For both sandbox sources, the script drops traffic to host addresses in `mangle PREROUTING`, before that translation. Replies are allowed. Direct container and GPU access still uses the CIDR rules. The `INPUT` jumps to `SANDBOX-INPUT` also allow replies and drop other host traffic.
