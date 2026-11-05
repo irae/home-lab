@@ -4,8 +4,13 @@
 # For each directory that contains a compose.yaml, run three commands in
 # order, as separate steps (not chained):
 #   1. docker compose build --pull
-#   2. docker compose pull
+#   2. docker compose pull --ignore-buildable
 #   3. docker compose up -d
+#
+# build --pull refreshes base images and rebuilds local images. pull skips
+# images that have a build section, so a local tag is not pulled from a
+# registry. up -d recreates a container only when its image or service
+# configuration changed.
 #
 # This script is the worker for stacks-image-update.service. systemd runs it
 # as root. irae is in group docker, but this is a system timer so it does not
@@ -13,11 +18,17 @@
 #
 # Failures: if one stack fails, log it and continue to the next stack so a
 # broken project does not block other projects. The script exits 1 if any
-# stack failed, so the systemd unit records a failure.
+# stack failed, so the systemd unit records a failure. A failed build or
+# registry pull skips up -d for that stack only.
 #
 # There is no retry loop. There is no "already up to date" shortcut.
+# An optional first argument overrides the stacks root for tests.
 
 STACKS_ROOT="/data/stacks"
+if [ -n "${1:-}" ]
+then
+    STACKS_ROOT="$1"
+fi
 failed=0
 did_any=0
 
@@ -65,8 +76,8 @@ do
         continue
     fi
 
-    echo "stacks-image-update: ${stack_name}: compose pull"
-    docker compose pull
+    echo "stacks-image-update: ${stack_name}: compose pull --ignore-buildable"
+    docker compose pull --ignore-buildable
     if [ $? -ne 0 ]
     then
         echo "stacks-image-update: ERROR ${stack_name}: pull failed"

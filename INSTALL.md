@@ -66,7 +66,7 @@ Each stack README has the commands. `irae` runs them, except `restricted-mail`, 
 
 Versioned in this repo: `/data/stacks/host/`.
 
-- Worker: `host/stacks-image-update.sh` (one compose project at a time: build --pull, pull, up -d)
+- Worker: `host/stacks-image-update.sh` (one compose project at a time: build --pull, pull --ignore-buildable, up -d)
 - Units: `host/stacks-image-update.service` + `.timer` (04:30 local, Persistent=)
 - Install (root, after review): `bash /data/stacks/host/install-root.sh`. It also turns off LAN IPv6; see [host/README.md](host/README.md).
 - There is no user unit. `host/install-user.sh` only explains that.

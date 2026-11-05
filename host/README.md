@@ -13,17 +13,18 @@ A systemd **timer** that, once a day, walks every stack under
 `/data/stacks/*/compose.yaml` and runs three separate compose commands:
 
 1. `docker compose build --pull`
-2. `docker compose pull`
+2. `docker compose pull --ignore-buildable`
 3. `docker compose up -d`
 
 It is a host job, not a container.
 
-For a locally built image (`set-brainz:prod`, `restricted-mail:prod`,
-`local-llm-sandboxed:1`, `hermes-ssh:latest`), `docker compose pull` fails. The
-worker then skips `up -d`, so the new image is built and not started. Update
-those stacks with the commands in each stack README. `dozzle` and `sabnzbd` are
-registry images and follow the three commands above. The timer is not installed
-until `install-root.sh` runs.
+`build --pull` refreshes base images and rebuilds local images
+(`hermes-ssh:latest` from `nousresearch/hermes-agent`, `local-llm-sandboxed:1`
+from Debian, `restricted-mail:prod`, and `set-brainz:prod`).
+`pull --ignore-buildable` pulls registry images and does not pull those local
+images. `up -d` recreates a container only when its image or service
+configuration changed. A failed build or registry pull skips `up -d` for that
+stack only. The timer is not installed until `install-root.sh` runs.
 
 ## Files
 
