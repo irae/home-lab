@@ -55,7 +55,9 @@ the timer file, then install.
 
 ## Install (after you review)
 
-Run as root, not sudo (sudo is not installed):
+Use an IPv4 or Tailscale SSH session. The installer removes LAN IPv6 addresses, which can close an IPv6 SSH session. From the Mac, open a second session with `ssh -4 -o ProxyCommand=none irae@sheeta.local`. Check `echo "$SSH_CONNECTION"`; the server address must be IPv4. Keep this session open.
+
+Run as root in that session, not sudo (sudo is not installed):
 
 ```
 bash /data/stacks/host/install-root.sh
