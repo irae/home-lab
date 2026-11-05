@@ -32,7 +32,7 @@ until `install-root.sh` runs.
 | `stacks-image-update.sh` | The worker. Verbose bash. This path is what the unit will exec. |
 | `stacks-image-update.service` | systemd oneshot that calls the script |
 | `stacks-image-update.timer` | Fires the service at 04:30 local time |
-| `install-root.sh` | Copies the two unit files into `/etc/systemd/system/` and enables the timer; installs and applies the sysctl file |
+| `install-root.sh` | Validates and installs the units; applies the sysctl file; enables, starts, and checks the timer |
 | `90-lan-ipv6-off.conf` | Turns off IPv6 on `enp1s0` and `enp2s0`. Docker publishes ports on `[::]`, so a router that gives out IPv6 would expose them. `tailscale0` keeps IPv6. |
 | `install-user.sh` | Explains why there is no user unit. Does not install anything. |
 | `drafts/hermes-compose.yaml` | **Not installed.** Older Hermes draft; superseded by the review plan in [`../hermes/README.md`](../hermes/README.md). |
@@ -57,6 +57,8 @@ the timer file, then install.
 
 Use an IPv4 or Tailscale SSH session. The installer removes LAN IPv6 addresses, which can close an IPv6 SSH session. From the Mac, open a second session with `ssh -4 -o ProxyCommand=none irae@sheeta.local`. Check `echo "$SSH_CONNECTION"`; the server address must be IPv4. Keep this session open.
 
+Finish all stack setup and rebuilds first. The timer has `Persistent=true`: starting it can run a missed update immediately. That update can pull images and recreate containers. Do not run the installer until that is safe.
+
 Run as root in that session, not sudo (sudo is not installed):
 
 ```
@@ -65,19 +67,23 @@ bash /data/stacks/host/install-root.sh
 
 That script:
 
-- copies the `.service` and `.timer` into `/etc/systemd/system/`
-- runs `daemon-reload`
-- enables the timer
+- validates both units with `systemd-analyze verify` before copying them
+- copies the units into `/etc/systemd/system/` and runs `daemon-reload`
 - copies `90-lan-ipv6-off.conf` into `/etc/sysctl.d/` and applies it
-- does **not** start a compose update right now
+- enables and starts the timer, then checks that it is enabled and active
 - does **not** touch the reboot cron
 
-Check without running an update:
+Check the schedule and any update that ran:
 
 ```
-systemctl status stacks-image-update.timer
+systemctl is-enabled stacks-image-update.timer
+systemctl is-active stacks-image-update.timer
 systemctl list-timers stacks-image-update.timer
+systemctl status stacks-image-update.service
+journalctl -u stacks-image-update.service -n 100
 ```
+
+Expect `enabled` and `active` for the timer. The service is a oneshot: it can be inactive after a successful run. If it ran, check its result and repeat the stack checks before you finish.
 
 A one-shot test run, when you want one:
 
