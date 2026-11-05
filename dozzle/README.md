@@ -17,9 +17,22 @@ cd /data/stacks/dockge && docker compose down
 Stop if this fails. After the checkout update, as `irae`:
 
 1. Create the users file. Use a long random password; the login has no rate limit.
+   Do not add `-t`. With `-t`, the password prompt is written into `users.yml`.
    ```bash
    mkdir -p /data/volumes/dozzle
-   docker run -it --rm amir20/dozzle:latest generate <user> --user-roles none > /data/volumes/dozzle/users.yml
+   read -rs password
+   printf '%s\n' "$password" | docker run -i --rm amir20/dozzle:latest generate <user> --user-roles none > /data/volumes/dozzle/users.yml
+   unset password
+   ```
+   The file must start with `users:` and the password field must be a bcrypt hash. Do not print the file.
+   ```bash
+   awk '
+   { sub(/\r$/, "") }
+   NR == 1 { ok = ($0 == "users:") }
+   $1 == "password:" && $2 ~ /^\$2[aby]\$/ { hash = 1 }
+   $0 == "Password:" { bad = 1 }
+   END { exit !(ok && hash && !bad) }
+   ' /data/volumes/dozzle/users.yml
    ```
 2. Start the stack:
    `cd /data/stacks/dozzle && docker compose up -d`
