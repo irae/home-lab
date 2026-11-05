@@ -25,7 +25,7 @@ Dashboard/API host bindings use `0.0.0.0`. Dashboard `public_url` is
 `http://sheeta:5006/`. Dashboard authentication, a persistent session secret, and
 an API key stay outside Git. No public ingress/router forwarding.
 The installed image has no separate `webapp` service; port 5005 was removed.
-Extra server ports require explicit mappings. Inventory: [root README](../README.md).
+Extra server ports require explicit mappings in [compose.yaml](compose.yaml).
 
 ## Setup and updates
 
