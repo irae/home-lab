@@ -8,16 +8,20 @@ Dozzle reaches Docker only through `socket-proxy`, on an internal network. The p
 
 ## Deploy
 
-As `irae`, after `git pull` in `/data/stacks`:
+For the first deploy, stop Dockge before you update `/data/stacks`. The update removes `dockge/`. As `irae`, run:
+
+```bash
+cd /data/stacks/dockge && docker compose down
+```
+
+Stop if this fails. After the checkout update, as `irae`:
 
 1. Create the users file. Use a long random password; the login has no rate limit.
    ```bash
    mkdir -p /data/volumes/dozzle
    docker run -it --rm amir20/dozzle:latest generate <user> --user-roles none > /data/volumes/dozzle/users.yml
    ```
-2. Stop and remove the old Dockge stack, which holds port 5001:
-   `docker compose -p dockge down`
-3. Start the stack:
+2. Start the stack:
    `cd /data/stacks/dozzle && docker compose up -d`
 
 `/data/volumes/dockge` is no longer used. Remove it when you no longer need it.
