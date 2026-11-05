@@ -36,7 +36,9 @@ Read your generated password locally (do not commit or share the output):
 grep '^HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=' /data/volumes/hermes/.env
 ```
 
-Build the local image, run the official Docker setup wizard and provider login, then start the service:
+For an existing install, do not run `setup`. Use `cd /data/stacks/hermes && docker compose build --pull && docker compose up -d`. This keeps the live configuration.
+
+For a new install only, build the image, run the setup wizard and provider login, then start the service:
 
 ```bash
 cd /data/stacks/hermes
