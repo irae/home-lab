@@ -1,20 +1,41 @@
-# dozzle
+# Dozzle: observation without stack control
 
-Read-only log and container viewer. Host port `5001`; container port `8080`. Login is required (simple auth).
+A log and container viewer for checking the lab without turning the web UI into
+a deployment console. Simple authentication is enabled. Stack/Docker changes remain a deliberate operation over SSH.
 
-Dozzle reaches Docker only through `socket-proxy`, on an internal network. The proxy allows GET requests for containers, logs, info, events, ping, and version. It blocks POST, exec, archive, export, and all other API calls. You cannot start, stop, or edit stacks here. Use SSH.
+## Design and limits
 
-`/data/volumes/dozzle` holds `users.yml` (bcrypt hash) and Dozzle user settings. It is not in git.
+Most of those traits are designs from Dozzle itself, and my installation was hardened with IA help, to fulfill the requirements of this repo being public while making it as secure as possible. My services are only exposed to LAN and Wireguard Tailnet, thus this is a second tier protection, besides host firewall.
+
+[Compose](compose.yaml) gives Dozzle access to Docker through `socket-proxy`, not
+a direct socket mount. The proxy is on an internal Docker network and has no
+published port. Its configured API policy enables container/log inspection,
+info, events, ping, and version, and disables POST, exec, archive, export, and
+other API categories. Dozzle's action, shell, MCP, and setup-wizard features are
+also disabled in the environment so UI configuration cannot enable them.
+
+Dozzle runs as UID/GID 1000 with a read-only root filesystem, all capabilities
+dropped, and `no-new-privileges`. Its data directory is still writable. The proxy
+itself holds the Docker socket: the `:ro` socket mount is not an API authorization
+boundary, so the proxy's request filtering and isolation remain important. Logs
+and container metadata can contain sensitive information even without write
+access to Docker.
 
 ## Deploy
 
-For the first deploy, stop Dockge before you update `/data/stacks`. The update removes `dockge/`. As `irae`, run:
+Port 5001 has no host-address restriction in Compose; it is not a Tailscale-only
+listener. Authentication has no rate limit in this setup. Check network exposure
+and use a long random password; this is not intended as a public log endpoint.
 
-```bash
-cd /data/stacks/dockge && docker compose down
-```
+`/data/volumes/dozzle` holds `users.yml` (bcrypt hash) and Dozzle user settings.
+Keep it outside Git and preserve ownership/access when restoring it.
 
-Stop if this fails. After the checkout update, as `irae`:
+If migrating an older deployment that still has Dockge, stop it using its
+original Compose project before removing that checkout. Do not assume deleting a
+stack directory stops its containers. The current repo has no Dockge stack.
+
+For a new installation, as `irae`, follow the steps below. On an existing
+installation, preserve `users.yml` rather than overwriting it during updates.
 
 1. Create the users file. Use a long random password; the login has no rate limit.
    Do not add `-t`. With `-t`, the password prompt is written into `users.yml`.
@@ -37,7 +58,8 @@ Stop if this fails. After the checkout update, as `irae`:
 2. Start the stack:
    `cd /data/stacks/dozzle && docker compose up -d`
 
-`/data/volumes/dockge` is no longer used. Remove it when you no longer need it.
+If migrating from Dockge, retain its data until you have checked for work you
+need; remove the old volume only deliberately.
 
 ## Update
 
@@ -48,3 +70,9 @@ cd /data/stacks/dozzle
 docker compose pull
 docker compose up -d
 ```
+
+After deployment or an image update, check that login is required, expected logs
+are visible, and action/shell controls remain unavailable. Inspect the effective
+proxy policy if its image changes; a successful container start does not verify
+API filtering. Preserve the users file and keep credentials/log contents out of
+shared diagnostic output.

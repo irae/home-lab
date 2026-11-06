@@ -1,18 +1,39 @@
-# LAN file share (Samba, NetBIOS name sheeta)
+# LAN media share
 
-VLC on Apple TV plays files from an SMB share. This host answers the NetBIOS name `sheeta` on the LAN. The name stays when DHCP gives a new address, and when the cable moves from `enp1s0` to `enp2s0`.
+This host-level Samba setup lets VLC on Apple TV play completed downloads without
+exposing the downloader's whole configuration tree. NetBIOS and Bonjour provide
+discovery without pinning a DHCP address. The configured NetBIOS name is `sheeta`;
+discovery covers both onboard Ethernet ports.
 
-Nothing here is live until you run `install-root.sh` as root.
+Checking out these files does not activate them. Review the share and network
+scope, then run `install-root.sh` as root. Inspect installed configuration and
+services to establish what is actually active.
 
-## Decision
+## Boundary and trade-offs
 
-- Protocol: SMB2. Guest read. No password.
+The [share definition](shares-available/sabnzbd.conf) is read-only guest access,
+not authenticated private file access. Any permitted LAN client can read the
+shared files. SMB signing and encryption are disabled for this compatibility
+setup, so it does not provide cryptographic integrity or confidentiality against
+an untrusted LAN. Keep sensitive material out of the share and don't expose this
+service on a public or untrusted network.
+
+The [global configuration](smb.conf) restricts listening interfaces and allowed
+clients to loopback and the configured LAN CIDR. That is separate from Docker
+and Tailscale service access. The guest session is forced to the Unix owner of
+the download tree; narrowing the exported path and retaining `read only = yes`
+are important because that account owns more than the exported files.
+
+## Configuration choices
+
+- Protocol: SMB2 minimum; SMB1 stays disabled. Guest read. No password.
 - Name: NetBIOS `sheeta`, through `nmbd`. SMB1 stays off. NetBIOS is the name service, not the file dialect.
 - Gate: `smbd` binds `lo` and the address in `192.168.1.0/24`. That address is on `enp1s0` or `enp2s0`, where the cable is. `hosts allow` is `127.0.0.1` and `192.168.1.0/24`.
-- Do not put interface names in `interfaces`. Samba looks up a name with no address as a DNS name. Tailscale DNS takes 40 s to fail that lookup. Each Samba RPC process then starts late, and the Finder and VLC share list times out. A direct `smb://<sheeta-lan-ip>/sabnzbd` URL skips the share list, so it still works.
+- Do not put interface names in `interfaces`. Samba looks up a name with no address as a DNS name. Tailscale DNS takes 40 s to fail that lookup. Each Samba RPC process then starts late, and the Finder and VLC share list times out. A direct `smb://sheeta.local/sabnzbd` URL skips the share list when mDNS resolves the host.
 - Bonjour: `avahi-daemon` on `enp1s0` and `enp2s0` only. `smbd` registers `_smb._tcp` through it. Finder and VLC on tvOS find `SHEETA` without NetBIOS.
-- One share at a time. The live share is the single link in `shares-enabled/`.
-- First share: `sabnzbd`. Path: `/data/volumes/sabnzbd/config/Downloads/complete`.
+- One share at a time. The selected share is the single link in `shares-enabled/`;
+  installation copies it to the host. A repository link is not proof of live state.
+- The tracked share is `sabnzbd`. Path: `/data/volumes/sabnzbd/config/Downloads/complete`.
 - Do not share `/data/volumes/sabnzbd/config`. `sabnzbd.ini` holds server passwords and API keys.
 - Guest file access uses Unix user `irae`, because that user owns the download tree.
 - SMB signing is off. VLC guest sessions fail when the server requires signing.
@@ -20,9 +41,12 @@ Nothing here is live until you run `install-root.sh` as root.
 
 VLC lists the server in Local Network. The label is `SHEETA`. Open share `sabnzbd`. If VLC asks for a login, use the name `guest` and an empty password.
 
-## Why the second port is in this change
+## Address changes and the second Ethernet port
 
-`enp1s0` is the port with DHCP today. `enp2s0` is the other onboard port. It has no address until a cable is in it. A router address pin follows the MAC, so a cable move gets a new address. The install script adds `allow-hotplug` DHCP for `enp2s0`. It does not run `ifup`. The port comes up when the cable is connected.
+The install script adds `allow-hotplug` DHCP for `enp2s0` alongside the primary
+`enp1s0` setup. It does not run `ifup`. The second port comes up when a cable is
+connected; a DHCP reservation for one port's MAC does not follow a cable move to
+the other port.
 
 A dhclient exit hook restarts `smbd` and `nmbd` when `enp1s0` or `enp2s0` gains an address, or when a renew changes the address. The NetBIOS registration then uses the new address. A restart drops an open playback. The old address is already gone in that case.
 
@@ -74,7 +98,15 @@ smbclient -L 127.0.0.1 -N
 systemctl status avahi-daemon smbd nmbd
 ```
 
-`nmblookup` prints the current LAN address for `sheeta`. `smbclient -L` lists `sabnzbd` in less than a second.
+Expect `nmblookup` to resolve the current LAN address and `smbclient -L` to list
+`sabnzbd` promptly. Check playback/discovery from VLC as well as the CLI listing.
+Verify a guest can read an intended media file but cannot write, cannot browse
+application configuration, and cannot connect from a disallowed network. These
+are deployment checks, not test results recorded here.
+
+Changing to another share also requires reviewing the installer's `SHARE_PATH`
+preflight: it currently checks the SABnzbd completion directory, independent of
+the selected link. Selecting a new link alone does not generalize that check.
 
 ## Uninstall
 

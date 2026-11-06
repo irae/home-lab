@@ -1,6 +1,22 @@
-# Hermes
+# Hermes: persistent agent experiments
 
-**Hermes is running with browser chat. No external messaging platform is configured.**
+I use this stack to try an agent with persistent state, browser chat, and a
+workspace for ongoing personal automation. [Compose](compose.yaml) enables the
+dashboard and API, starts `gateway run`, and retains application state outside the container. I also use Telegram connector so my Hermes instance can join whitelisted group chats for my family to access some of the apps and agent skills I want to build in the future.
+
+## Design and limits
+
+This is not the [local-LLM sandbox](../local-llm-sandboxed/README.md). Hermes uses
+normal Docker networking with no destination allowlist in this Compose file.
+Its local terminal backend can execute tools and modify the persistent workspace;
+there is no read-only root filesystem or capability-drop policy declared here.
+Treat agent output and proposed deployments as work to review, not changes to
+apply automatically. Don't grant it host Docker access.
+
+The SSH extension reuses the existing application account and authoritative
+container environment so SSH and Docker-exec sessions don't drift into separate
+configurations. Key-only application-user SSH so Hermes can be used as a coding agent remotely on a terminal or agentic IDEs, disabled root SSH, has `no-new-privileges` constrain entry and privilege escalation, not what the
+application user can do with its files, credentials, or network access.
 
 ## Container and storage
 
@@ -23,8 +39,12 @@ Use `http://sheeta:[port]/` over LAN or Tailscale:
 
 Dashboard/API host bindings use `0.0.0.0`. Dashboard `public_url` is
 `http://sheeta:5006/`. Dashboard authentication, a persistent session secret, and
-an API key stay outside Git. No public ingress/router forwarding.
-The installed image has no separate `webapp` service; port 5005 was removed.
+an API key stay outside Git. These are all-interface IPv4 bindings, not
+Tailscale-only listeners; LAN/Tailscale use does not itself enforce who can
+connect. No public ingress or router forwarding is defined here, and upstream
+network policy must be checked separately. The healthcheck tests only the local
+API health route, not authentication, model access, or agent behavior.
+There is no separate `webapp` service in this Compose file.
 Extra server ports require explicit mappings in [compose.yaml](compose.yaml).
 
 ## Setup and updates
@@ -67,9 +87,16 @@ docker compose up -d
 - Larger apps: Hermes proposes stacks in its own `home-lab` clone; you review and deploy.
   Grant a dedicated SSH key access to a non-root app sandbox if needed, not host Docker.
 - The host updater discovers `*/compose.yaml`; pulling a stack can make it eligible for startup.
-- Configure Luna during setup; confirm provider/model ID. ChatGPT/Codex uses `openai-codex` OAuth.
-- Add local fallback with `hermes fallback` later, when the GPU box returns.
-  Candidate: `http://arrietty:8080/v1`; verify endpoint, quota failover, and model capabilities.
+- Provider selection is private deployment state, not established by the tracked
+  starter config. Confirm provider/model IDs during setup rather than assuming a
+  particular service is configured.
+- For local-model selection, use the hardware-specific process in
+  [choose-a-local-llm](https://github.com/irae/choose-a-local-llm). Evaluation results
+  do not by themselves configure Hermes or prove compatibility with its tools.
+- A local fallback would use the separate inference machine, not `sheeta`.
+  The documented candidate endpoint is `http://arrietty:8080/v1`; verify
+  availability, model/tool support, and fallback behavior before configuring it.
+  This checkout does not establish that a fallback is active.
 
 ## Files and restore
 
@@ -89,4 +116,5 @@ docker compose up -d
 [Providers](https://hermes-agent.nousresearch.com/docs/integrations/providers) ·
 [Fallback](https://hermes-agent.nousresearch.com/docs/user-guide/features/fallback-providers)
 
-Supersedes the inactive `host/drafts/hermes-compose.yaml` proposal.
+Use the current Compose file rather than the historical
+[`host/drafts/hermes-compose.yaml`](../host/drafts/hermes-compose.yaml) proposal.
