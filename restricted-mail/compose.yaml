@@ -16,10 +16,11 @@ services:
     tmpfs:
       - /tmp
     volumes:
-      - ${SENDERS_FILE}:/config/senders.yaml:ro
+      - ${CONFIG_FILE}:/config/config.yaml:ro
       - ${LOG_DIR}:/log
     secrets:
       - fastmail_token
+      - api_keys
     healthcheck:
       test:
         - CMD
@@ -36,6 +37,8 @@ services:
 secrets:
   fastmail_token:
     file: ${TOKEN_FILE}
+  api_keys:
+    file: ${API_KEYS_FILE}
 networks:
   restricted-mail:
     name: restricted-mail

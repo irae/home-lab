@@ -6,13 +6,13 @@ smaller HTTP API. It supports personal automation experiments in the
 [local-LLM sandbox](../local-llm-sandboxed/README.md).
 
 The app is a separate private repository (`git@github.com:irae/restricted-mail.git`).
-Its local checkout is `/data/stacks/restricted-mail/app`, owned by root and ignored
+Its local checkout is `/data/stacks/restricted-mail/app`, owned by `irae` and ignored
 here. Compose and the deployment `.env` live in this directory; application
 behavior, API documentation, and tests live in that separate checkout.
 
 ## Policy boundary and limits
 
-The current upstream docs describe unauthenticated clients and group-dependent
+The current upstream docs describe bearer-key authentication and group-dependent
 permissions: whitelist groups read selected senders and permitted downloads;
 classifier groups can also change mailbox membership for messages in configured
 folders. **Do not assume this deployment is universally read-only.** The deployed
@@ -34,14 +34,14 @@ and binds all IPv4 interfaces. Containers on the `restricted-mail` network use
 `http://restricted-mail:8080`. The shared bridge is not an authentication control
 and is not declared internal. This stack defines no destination firewall policy.
 The sandbox's separate CIDR rules are broader than this app; they do not establish
-exclusive mail access. Because the current upstream API has no client login,
-review who can reach the published port and shared network. HTTP alone adds no
+exclusive mail access. Review who can reach the published port and shared network; bearer keys protect
+mail routes but not the health endpoint. HTTP alone adds no
 transport encryption.
 
 ## Configuration and first deployment
 
-Provide `APP_DIR`, `HOST_PORT`, `SENDERS_FILE`, `LOG_DIR`, and `TOKEN_FILE` in the
-private `.env`. Review the application version and policy, ensure bind paths
+Provide `APP_DIR`, `HOST_PORT`, `CONFIG_FILE`, `API_KEYS_FILE`, `LOG_DIR`, and
+`TOKEN_FILE` in the private `.env`. Review the application version and policy, ensure bind paths
 exist, and give UID/GID 10001 the needed read access to policy/token files and
 write access to logs. Keep tokens, policy contents, mail, and logs out of Git and
 shared diagnostic output. There is no checked-in `.env` template establishing
@@ -54,22 +54,15 @@ safe for real credentials. Use the app's stub-based tests for offline checks.
 
 ## Update
 
-This is the stack that must be updated as root. This host has no `sudo`. Open a root shell.
-
-Root pulls with the key at `/home/irae/.ssh/id_ed25519`. The client config is `/root/.ssh/config`, mode `600`. `/root/.ssh` is mode `700`.
-
-```
-Host github.com
-    User git
-    IdentityFile /home/irae/.ssh/id_ed25519
-    IdentitiesOnly yes
-```
-
-As root:
+As `irae`, review the upstream deployment guide and changes before updating.
+Preserve the existing configuration, secrets, and deliberate Compose settings.
+The upstream root installer changes checkout ownership; do not use it for this
+checkout. Changes to protected secrets may require root.
 
 ```bash
-git -C /data/stacks/restricted-mail/app pull
+git -C /data/stacks/restricted-mail/app pull --ff-only
 cd /data/stacks/restricted-mail
+docker compose config --quiet
 docker compose up -d --build
 ```
 
