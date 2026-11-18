@@ -23,6 +23,7 @@ services:
       - "0.0.0.0:5006:9119"
       - "0.0.0.0:7390:8642"
       - "0.0.0.0:2202:22"
+      - "0.0.0.0:3774:3773"
     volumes:
       - type: bind
         source: /data/volumes/hermes
@@ -34,7 +35,7 @@ services:
       - no-new-privileges:true
     shm_size: 1g
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8642/health"]
+      test: ["CMD", "curl", "--fail-early", "--fail", "--silent", "--show-error", "--output", "/dev/null", "http://127.0.0.1:8642/health", "--output", "/dev/null", "http://127.0.0.1:3773/"]
       interval: 30s
       timeout: 5s
       retries: 3

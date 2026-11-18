@@ -20,3 +20,27 @@ RUN chmod 644 /etc/ssh/authorized_keys \
  && printf 'export PATH="%s"\n' "$PATH" > /etc/profile.d/hermes-path.sh \
  && usermod --password x --shell /usr/local/bin/ssh-shell hermes \
  && printf '\n. /usr/local/share/root-shell-warning.sh\n' >> /etc/bash.bashrc
+
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/t3/dependencies.d \
+ && printf 'longrun\n' > /etc/s6-overlay/s6-rc.d/t3/type \
+ && touch /etc/s6-overlay/s6-rc.d/t3/dependencies.d/base \
+          /etc/s6-overlay/s6-rc.d/user/contents.d/t3
+COPY --chmod=755 t3-run.sh /etc/s6-overlay/s6-rc.d/t3/run
+
+ADD https://github.com/pingdotgg/t3code/releases/latest/download/SHA256SUMS /tmp/t3-SHA256SUMS
+RUN set -eu; \
+    case "$(dpkg --print-architecture)" in \
+      amd64) arch=x64 ;; \
+      arm64) arch=arm64 ;; \
+      *) echo 'No T3 release archive for this architecture' >&2; exit 1 ;; \
+    esac; \
+    archive="$(grep -Eo "t3-[0-9]+\.[0-9]+\.[0-9]+-linux-${arch}\.tar\.gz$" /tmp/t3-SHA256SUMS)"; \
+    version="${archive#t3-}"; \
+    cd /tmp; \
+    curl -fsSL --retry 3 "https://github.com/pingdotgg/t3code/releases/download/v${version%-linux-*}/${archive}" -o "$archive"; \
+    sha256sum --check --ignore-missing t3-SHA256SUMS; \
+    mkdir -p /opt/t3; \
+    tar -xzf "$archive" -C /opt/t3 --strip-components=1; \
+    ln -s /opt/t3/t3 /usr/local/bin/t3; \
+    rm "$archive" t3-SHA256SUMS; \
+    /usr/local/bin/t3 --version
