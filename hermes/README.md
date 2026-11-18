@@ -20,10 +20,10 @@ application user can do with its files, credentials, or network access.
 
 ## Container and storage
 
-- Local `hermes-ssh:latest` image based on `nousresearch/hermes-agent:latest`; upstream init and `gateway run` with supervised sshd.
+- Local `hermes-ssh:latest` image based on `nousresearch/hermes-agent:latest`; upstream init and `gateway run` with supervised sshd and T3 Code.
 - The build reuses `local-llm-sandboxed/sshd-run.sh` and copies only `/home/irae/.ssh/authorized_keys` from its build context.
 - `HERMES_UID=1000`, `HERMES_GID=1000`; no Compose `user:` override.
-- Normal Docker bridge/NAT; `restart: unless-stopped`; API healthcheck.
+- Normal Docker bridge/NAT; `restart: unless-stopped`; API and T3 HTTP healthcheck.
 - Bind `/data/volumes/hermes:/opt/data`, owned by `irae:irae`, mode `0700`.
 - State/credentials stay in `/opt/data`; projects and user files in `/opt/data/home`.
 - Leave image-owned `/opt/hermes` untouched. Back up the volume with writers stopped;
@@ -36,14 +36,21 @@ Use `http://sheeta:[port]/` over LAN or Tailscale:
 - **:5006** — dashboard, including browser chat, container :9119.
 - **:7390** — OpenAI-compatible API / health, container :8642.
 - **:2202** — Key-only SSH as `hermes` on container port 22: `ssh -p 2202 hermes@sheeta`. Root SSH is disabled. Host keys persist in `/data/volumes/hermes/ssh-hostkeys` across builds and container recreations.
+- **:3774** — T3 Code web UI and direct pairing at `http://sheeta:3774/`
+  (container :3773, separate from the host's T3). T3 runs in `--lan` mode.
+  To generate a client pairing link, run
+  `t3 auth pairing create --base-url http://sheeta:3774 --ttl 5m` over SSH as
+  `hermes`. Plain LAN HTTP works for client pairing; environment-to-environment
+  links need HTTPS or a Tailscale address.
 
-Dashboard/API host bindings use `0.0.0.0`. Dashboard `public_url` is
+Dashboard/API/T3 host bindings use `0.0.0.0`. Dashboard `public_url` is
 `http://sheeta:5006/`. Dashboard authentication, a persistent session secret, and
 an API key stay outside Git. These are all-interface IPv4 bindings, not
 Tailscale-only listeners; LAN/Tailscale use does not itself enforce who can
 connect. No public ingress or router forwarding is defined here, and upstream
-network policy must be checked separately. The healthcheck tests only the local
-API health route, not authentication, model access, or agent behavior.
+network policy must be checked separately. The healthcheck tests the local
+Hermes API health route and T3 web response, not authentication, model access,
+or agent behavior.
 There is no separate `webapp` service in this Compose file.
 Extra server ports require explicit mappings in [compose.yaml](compose.yaml).
 
@@ -77,7 +84,14 @@ docker compose up -d
 - Root maintenance only: `docker exec -it --user root hermes bash`. Interactive root
   Bash shells display a warning and the normal-use commands; agents and coding work
   should run as `hermes`. Upstream root initialization and supervision are unchanged.
-- Update: `docker compose build --pull`, then `docker compose up -d`; no in-container self-update.
+- Update: `docker compose build --pull`, then `docker compose up -d`; no
+  in-container self-update. Each build checks GitHub for the latest stable T3
+  Code release. The official archive includes T3 Connect configuration.
+- s6 runs `t3 serve` as `hermes`; do not use `t3 service install` or `t3 update`
+  in the container. T3 state stays in `/opt/data/.t3`, including the private
+  `hermes-service.log` (which contains startup pairing credentials). To enable
+  T3 Connect, run `t3 connect link --headless` as `hermes`, then restart the
+  container when idle.
 - Verify LAN/Tailscale access, authentication, persistence, and restart recovery.
 
 ## Development and models
@@ -100,10 +114,11 @@ docker compose up -d
 
 ## Files and restore
 
-- `Dockerfile`: local image with OpenSSH, reusing the sandbox SSH startup script.
+- `Dockerfile`: local image with OpenSSH and the checksum-verified stable T3 Code release.
+- `t3-run.sh`: s6 service entry point for T3 Code under the `hermes` account.
 - `ssh-shell.sh`: SSH login shell loading the authoritative s6 environment before Bash.
 - `root-shell-warning.sh`: interactive root Bash maintenance warning and normal-use commands.
-- `compose.yaml`: local image build, private state bind, and dashboard/API/SSH port mappings.
+- `compose.yaml`: local image build, private state bind, and dashboard/API/SSH/T3 port mappings.
 - `config.yaml`: starter settings copied to the volume once; edit the volume copy after setup.
 - `/data/volumes/hermes/.env`: web password/session secret, API key, and setup-managed secrets.
   Compose reads this file too; changes require container recreation, not just a restart.
