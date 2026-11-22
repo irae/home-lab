@@ -44,6 +44,24 @@ host. I review configuration and persistent data before deploying changes or
 recreating containers. The per-stack docs separate configured protections from
 what still needs checking on the running system.
 
+## SSH access
+
+`/home/irae/.ssh/authorized_keys` is the source of truth for lab SSH public
+keys. Shell SSH stacks copy that file at image build time and use key-only
+login as the application user. After adding or revoking a key, rebuild and
+recreate each shell SSH stack with `docker compose up -d --build`; restarting
+alone does not refresh the keys.
+
+| Host port | Service | Access |
+| --- | --- | --- |
+| `2201` | [LLM sandbox](local-llm-sandboxed/README.md) | Shell as `haku` |
+| `2202` | [Hermes](hermes/README.md) | Shell as `hermes` |
+| `2203` | [Forgejo](forgejo/README.md) | Git-only as `git`, on Tailscale |
+
+Forgejo uses the same allowlist but stores keys on the Forgejo account. Run
+its documented sync after changing the host allowlist; pulling the official
+image does not change Forgejo account keys.
+
 ## Documentation
 
 - [Installation and layout](INSTALL.md) — host setup and storage conventions.
