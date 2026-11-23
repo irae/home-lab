@@ -17,7 +17,8 @@ install -d -m 0700 -o 1000 -g 1000 /data/volumes/job-finder
 For Judgments, set `TYPESAFE_API_KEY` in the stack's ignored `.env` (mode
 0600). The app starts without it. If bringing an existing database, stop
 its writer and copy the whole data directory before starting this stack.
-Startup applies pending migrations.
+Make sure UID/GID 1000 can read the imported files and write to the
+database and data directory. Startup applies pending migrations.
 
 As `irae`:
 
@@ -34,5 +35,12 @@ Tailscale Serve rather than publishing it on all interfaces.
 ## Update
 
 The [host image timer](../host/README.md#image-update-workflow) skips this
-stack. Update the app checkout by hand and run the same `up` command to
-rebuild and replace the container. The data directory stays in place.
+stack. Rebuild by hand as `irae`:
+
+```bash
+cd /data/stacks/job-finder
+git -C app pull --ff-only
+docker compose up -d --build --wait
+```
+
+The data directory stays in place.
