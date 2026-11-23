@@ -30,8 +30,9 @@ particular tailnet's DNS suffix.
 
 ## Image-update workflow
 
-A systemd **timer** that, once a day, walks every stack under
-`/data/stacks/*/compose.yaml` and runs three separate compose commands:
+A systemd **timer** that, once a day, walks the stacks under
+`/data/stacks/*/compose.yaml`. It skips Job Finder, which is built and started
+by hand. For each other stack it runs three separate compose commands:
 
 1. `docker compose build --pull`
 2. `docker compose pull --ignore-buildable`

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Update every compose project under /data/stacks.
+# Update compose projects under /data/stacks, except Job Finder.
 #
 # For each directory that contains a compose.yaml, run three commands in
 # order, as separate steps (not chained):
@@ -57,6 +57,11 @@ do
 
     stack_name="$(basename "${entry}")"
     did_any=1
+    if [ "${stack_name}" = job-finder ]
+    then
+        echo "stacks-image-update: skip job-finder (manual updates)"
+        continue
+    fi
     echo "stacks-image-update: stack ${stack_name}"
 
     cd "${entry}"

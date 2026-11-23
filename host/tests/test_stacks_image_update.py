@@ -72,6 +72,19 @@ exit 0
         self.assertNotIn("--force-recreate", "\n".join(commands))
         self.assertNotIn(" compose pull\n", "\n".join(commands) + "\n")
 
+    def test_job_finder_is_not_built_pulled_or_started_by_the_timer(self):
+        self.add_stack("job-finder")
+        registry = self.add_stack("dozzle")
+
+        result = self.run_worker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.recorded(), [
+            f"{registry} compose build --pull",
+            f"{registry} compose pull --ignore-buildable",
+            f"{registry} compose up -d",
+        ])
+
     def test_build_failure_skips_up_and_continues(self):
         broken = self.add_stack("restricted-mail")
         healthy = self.add_stack("set-brainz")

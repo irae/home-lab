@@ -3,5 +3,6 @@
 restricted-mail/app/
 local-llm-sandboxed/models.json
 set-brainz/app/
+job-finder/app/
 
 tse-2026/

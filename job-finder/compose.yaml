@@ -1,0 +1,23 @@
+services:
+  job-finder:
+    build:
+      context: ./app
+    image: job-finder:prod
+    user: "1000:1000"
+    restart: unless-stopped
+    environment:
+      TYPESAFE_API_KEY: "${TYPESAFE_API_KEY:-}"
+    ports:
+      - "127.0.0.1:5007:3000"
+    volumes:
+      - type: bind
+        source: /data/volumes/job-finder
+        target: /data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/status').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
