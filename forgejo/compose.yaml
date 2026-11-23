@@ -22,7 +22,7 @@ services:
       FORGEJO__actions__ENABLED: "false"
     ports:
       - "127.0.0.1:4005:3000"
-      - "${FORGEJO_BIND_IP:-127.0.0.1}:2203:22"
+      - "127.0.0.1:2203:22"
     volumes:
       - type: bind
         source: /data/volumes/forgejo

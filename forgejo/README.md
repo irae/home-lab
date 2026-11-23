@@ -14,25 +14,24 @@ cd /data/stacks/forgejo
 install -d -m 0700 /data/volumes/forgejo
 (set -eu -o noclobber; umask 077
   host=$(tailscale status --json | jq -er '.Self.DNSName | rtrimstr(".")')
-  ip=$(tailscale ip -4)
-  printf 'FORGEJO_BIND_IP=%s\nFORGEJO_ROOT_URL=https://%s:5005/\n' \
-    "$ip" "$host" > .env)
+  printf 'FORGEJO_ROOT_URL=https://%s:5005/\n' "$host" > .env)
 docker compose up -d --wait
 ```
 
-Then publish HTTPS on the tailnet (run as root on the host once):
+Publish HTTPS and SSH on the tailnet once, as the Tailscale operator or root:
 
 ```bash
 tailscale serve --bg --https=5005 http://127.0.0.1:4005
+tailscale serve --bg --tcp=2203 tcp://127.0.0.1:2203
+tailscale serve status
 ```
 
-Create `.env` only on first setup. Its `FORGEJO_ROOT_URL` is the HTTPS web URL.
-HTTP binds only to host loopback (`127.0.0.1:4005` → container `3000`) and is
-terminated with TLS by `tailscale serve` on port `5005`. SSH binds to the
-host's Tailscale IPv4 address (`FORGEJO_BIND_IP:2203` → container `22`), not
-the LAN address. Without `.env`, Compose defaults SSH to loopback. If the
-Tailscale IP changes or the bind fails at boot, check `.env` and rerun
-`docker compose up -d --wait` after Tailscale is up.
+Create `.env` only on first setup. Its `FORGEJO_ROOT_URL` is the HTTPS web URL;
+old `FORGEJO_BIND_IP` entries are no longer used. Docker publishes HTTP
+(`127.0.0.1:4005` → container `3000`) and SSH (`127.0.0.1:2203` → container
+`22`) on loopback only, so it can restart Forgejo before Tailscale is ready.
+Tailscale Serve keeps both forwards across reboot and exposes them on the
+tailnet, not the LAN. HTTPS terminates at Tailscale Serve on port `5005`.
 
 Forgejo advertises SSH clone URLs as `git@forgejo:<owner>/<repo>.git`. Set
 `Host forgejo` in the client's SSH config to reach `sheeta` as `git` on port

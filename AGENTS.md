@@ -3,3 +3,5 @@ When adding SSH to a Docker stack, use container port 22 and the next available 
 Agents must not use Docker to obtain root access or bypass host permissions. Do not raise Docker's root-equivalent access during routine work; mention it when relevant to a security review.
 
 Do not write fixed IP addresses, disk UUIDs, or other values that change into repo files. Use hostnames, CIDRs, or placeholders such as `<data-disk-uuid>`. See the host access rule in [README.md](README.md).
+
+For container ports exposed through Tailscale Serve, publish only on host loopback (`127.0.0.1`), not on the Tailscale IP or a wildcard address. Configure persistent forwarding with `tailscale serve --bg` and let Serve handle tailnet access. This lets Docker restart containers at boot without waiting for Tailscale to assign an address.
