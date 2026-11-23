@@ -89,7 +89,10 @@ docker compose up -d
   Code release. The official archive includes T3 Connect configuration.
 - s6 runs `t3 serve` as `hermes`; do not use `t3 service install` or `t3 update`
   in the container. T3 state stays in `/opt/data/.t3`, including the private
-  `hermes-service.log` (which contains startup pairing credentials). To enable
+  `hermes-service.log` (which contains startup pairing credentials). T3 caches
+  its headless browser under `/opt/data/.t3/tools`. Compose disables Chrome's
+  own sandbox because the container blocks unprivileged user namespaces;
+  Docker's AppArmor, seccomp, and `no-new-privileges` remain in effect. To enable
   T3 Connect, run `t3 connect link --headless` as `hermes`, then restart the
   container when idle.
 - Verify LAN/Tailscale access, authentication, persistence, and restart recovery.

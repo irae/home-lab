@@ -17,6 +17,7 @@ services:
       HERMES_DASHBOARD_HOST: "0.0.0.0"
       API_SERVER_ENABLED: "true"
       API_SERVER_HOST: "0.0.0.0"
+      T3CODE_SERVER_BROWSER_SANDBOX: "0"
     env_file:
       - /data/volumes/hermes/.env
     ports:
