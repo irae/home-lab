@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# The deploy service runs with UMask=0077; checkout files must stay readable
+# by the image's non-root user after Docker COPY preserves their modes.
+umask 022
 
 sha=${FORGEJO_DEPLOY_SHA:-}
 [[ $sha =~ ^[0-9a-f]{40}$ ]] || { echo "invalid FORGEJO_DEPLOY_SHA" >&2; exit 2; }
