@@ -4,4 +4,6 @@ Agents must not use Docker to obtain root access or bypass host permissions. Do 
 
 Do not write fixed IP addresses, disk UUIDs, or other values that change into repo files. Use hostnames, CIDRs, or placeholders such as `<data-disk-uuid>`. See the host access rule in [README.md](README.md).
 
-For container ports exposed through Tailscale Serve, publish only on host loopback (`127.0.0.1`), not on the Tailscale IP or a wildcard address. Configure persistent forwarding with `tailscale serve --bg` and let Serve handle tailnet access. This lets Docker restart containers at boot without waiting for Tailscale to assign an address.
+Expose new web services through Tailscale Serve over HTTPS, using the loopback port as the Serve port when it is free, for example `tailscale serve --bg --https=5007 http://127.0.0.1:5007`. For container ports exposed through Tailscale Serve, publish only on host loopback (`127.0.0.1`), not on the Tailscale IP or a wildcard address. Configure persistent forwarding with `tailscale serve --bg` and let Serve handle tailnet access. This lets Docker restart containers at boot without waiting for Tailscale to assign an address.
+
+Agents cannot open a browser for the user from `sheeta`. When the user asks to open a service, give the full Tailscale Serve URL, including path, for example `https://<sheeta-tailnet-name>:5007/inbox`. Get the hostname from `tailscale status --json | jq -er '.Self.DNSName | rtrimstr(".")'`.
