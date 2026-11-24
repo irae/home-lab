@@ -4,7 +4,8 @@ Description=Forgejo deployment command service
 [Service]
 Type=simple
 ExecStart=/usr/bin/node /data/stacks/host/forgejo-deploy/server.mjs --config /data/volumes/forgejo-deploy/config.json
-Environment=FORGEJO_DEPLOY_SOCKET=/data/volumes/forgejo-deploy/run/server.sock
+Environment=FORGEJO_DEPLOY_HOST=0.0.0.0
+Environment=FORGEJO_DEPLOY_PORT=5008
 Restart=on-failure
 RestartSec=2
 UMask=0077

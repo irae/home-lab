@@ -2,7 +2,7 @@ When adding SSH to a Docker stack, use container port 22 and the next available 
 
 The operator accepts Docker management by existing authorized users as part of the lab threat model, including its root-equivalent implications. Treat that as established: do not repeat warnings about it, add restrictions merely to mitigate it, or prevent an authorized container operator from deploying. Agents still must not use Docker to bypass host permissions or grant Docker access to users that do not already have it.
 
-Use the instance-level Forgejo runner for Actions across repositories. Do not mount the host Docker socket into the runner or workflow containers. Automated host deployments go through `host/forgejo-deploy`: add one application at a time with a separate API key mapped to one allowlisted deployment command.
+Use the instance-level Forgejo runner for Actions across repositories. Do not mount the host Docker socket into the runner or workflow containers; workflows may use the isolated Docker-in-Docker daemon to build and run their own Dockerfiles. Automated host deployments go through `host/forgejo-deploy`: add one application at a time with a separate API key mapped to one allowlisted deployment command. This keyed deployment API is the deliberate exception to the usual Tailscale Serve rule and listens directly on host port 5008 for runner, LAN, and tailnet callers.
 
 Do not write fixed IP addresses, disk UUIDs, or other values that change into repo files. Use hostnames, CIDRs, or placeholders such as `<data-disk-uuid>`. See the host access rule in [README.md](README.md).
 

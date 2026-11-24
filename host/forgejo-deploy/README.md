@@ -1,10 +1,26 @@
 # Forgejo deploy service
 
-A user service on `sheeta` executes one fixed command per configured application.
-Forgejo Actions reaches it through the unexposed `deploy-relay` service in the
-Forgejo Compose network. Each application has its own bearer token. Requests can
-provide only a 40-character Git commit SHA; they cannot choose commands or
-arguments.
+A Node.js systemd user service on `sheeta` executes one fixed command per
+configured application. It listens on host TCP port `5008`; every deployment
+request requires the API key assigned to that application.
+
+Runtime configuration is private under `/data/volumes/forgejo-deploy`. The
+configuration maps application names to key files and exact executable commands:
+
+```json
+{
+  "apps": {
+    "job-finder": {
+      "keyFile": "/data/volumes/forgejo-deploy/keys/job-finder",
+      "command": ["/data/stacks/job-finder/deploy.sh"],
+      "timeoutMs": 1800000
+    }
+  }
+}
+```
+
+Requests can provide only a 40-character Git commit SHA. They cannot choose a
+command or add arguments.
 
 ## Install
 
@@ -14,20 +30,21 @@ As `irae`:
 bash /data/stacks/host/forgejo-deploy/install-user.sh
 ```
 
-The service uses `/data/volumes/forgejo-deploy` for its private configuration,
-keys, socket, and state. The systemd user unit points at the versioned server in
-this checkout.
+The systemd user unit points at the versioned server in this checkout.
 
-## Allow an application
+## Allow or rotate an application
 
-Create an executable deployment script, then add it:
+`manage-app.sh set` reads the key from standard input and prints nothing:
 
 ```bash
-/data/stacks/host/forgejo-deploy/manage-app.sh add job-finder /data/stacks/job-finder/deploy.sh
+openssl rand -hex 32 | /data/stacks/host/forgejo-deploy/manage-app.sh set \
+  job-finder /data/stacks/job-finder/deploy.sh
 ```
 
-The command prints the new token once. Add it to that repository as the
-`DEPLOY_API_KEY` Actions secret. Adding the app again rotates its token.
+When configuring Forgejo, generate the key once in memory and pipe the same
+value into `manage-app.sh set` and the repository's `DEPLOY_API_KEY` Actions
+secret. Set the repository's `DEPLOY_API_URL` Actions variable to
+`http://sheeta:5008`. Adding the application again rotates its key.
 
 List or remove applications:
 
@@ -36,13 +53,20 @@ List or remove applications:
 /data/stacks/host/forgejo-deploy/manage-app.sh remove job-finder
 ```
 
+## API
+
+```bash
+curl --fail \
+  -H "Authorization: Bearer $DEPLOY_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"sha":"<40-character-commit-sha>"}' \
+  http://sheeta:5008/v1/deploy/job-finder
+```
+
 ## Checks
 
 ```bash
 systemctl --user status forgejo-deploy.service
-curl --unix-socket /data/volumes/forgejo-deploy/run/server.sock http://localhost/healthz
+curl http://127.0.0.1:5008/healthz
 journalctl --user -u forgejo-deploy.service -n 100
 ```
-
-The relay has no published host port. It mounts only the socket directory, not
-the deployment configuration, API keys, Docker socket, or application data.

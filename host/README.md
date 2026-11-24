@@ -73,8 +73,8 @@ installer.
 
 [`forgejo-deploy`](forgejo-deploy/README.md) is a systemd user service that
 allows the instance-level Forgejo runner to trigger one fixed deployment command
-per application. Applications have separate API keys, and the relay between
-Actions and the host service has no published host port.
+per application. Applications have separate API keys. The HTTP service listens
+on host port `5008` for runner, LAN, and tailnet requests.
 
 ## Reboot cron: leave it
 

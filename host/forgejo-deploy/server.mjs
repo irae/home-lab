@@ -1,4 +1,4 @@
-import { chmodSync, readFileSync, unlinkSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { timingSafeEqual } from 'node:crypto';
@@ -8,8 +8,9 @@ const configIndex = args.indexOf('--config');
 if (configIndex === -1 || !args[configIndex + 1]) throw new Error('usage: server.mjs --config <path>');
 
 const config = JSON.parse(readFileSync(args[configIndex + 1], 'utf8'));
-const socketPath = process.env.FORGEJO_DEPLOY_SOCKET ?? config.socket;
-if (!socketPath) throw new Error('FORGEJO_DEPLOY_SOCKET or config.socket is required');
+const listenHost = process.env.FORGEJO_DEPLOY_HOST ?? config.host ?? '0.0.0.0';
+const listenPort = Number(process.env.FORGEJO_DEPLOY_PORT ?? config.port ?? 5008);
+if (!Number.isInteger(listenPort) || listenPort < 1 || listenPort > 65535) throw new Error('invalid deployment service port');
 if (!config.apps || typeof config.apps !== 'object') throw new Error('config.apps must be an object');
 
 const apps = new Map();
@@ -112,8 +113,6 @@ function run(appName, app, sha) {
   });
 }
 
-try { unlinkSync(socketPath); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-
 const server = createServer(async (request, response) => {
   if (request.method === 'GET' && request.url === '/healthz') {
     send(response, 200, { status: 'ok', apps: apps.size });
@@ -171,9 +170,8 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(socketPath, () => {
-  chmodSync(socketPath, 0o600);
-  console.log(`forgejo-deploy listening on ${socketPath} with ${apps.size} app(s)`);
+server.listen(listenPort, listenHost, () => {
+  console.log(`forgejo-deploy listening on ${listenHost}:${listenPort} with ${apps.size} app(s)`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {

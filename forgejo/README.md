@@ -52,21 +52,45 @@ Change the temporary password on first login and replace the placeholder email.
 ## Actions runner
 
 The `runner` service is registered globally so repositories on this instance can
-use `runs-on: node26`. Job containers run in the `docker-in-docker` service and
-do not receive the host Docker socket. Runner state and its Actions cache live in
-`/data/volumes/forgejo-runner`; the registration token and generated
-`config.yml` are private runtime files there.
+use `runs-on: generic`. The one-shot `runner-image` service builds that job image
+inside `docker-in-docker`; it includes Node 26, Python, common shell/build tools,
+Docker CLI and Compose, Playwright CLI, and Chromium. Job containers can build
+and run their own Dockerfiles against Docker-in-Docker without receiving the
+host Docker socket.
 
-The `deploy-relay` service publishes no host port. It only connects workflow
-HTTP requests from the Forgejo Compose network to the host deployment service's
-Unix socket. Install and manage that service through
-[`host/forgejo-deploy`](../host/forgejo-deploy/README.md).
+Runner state and its Actions cache live in `/data/volumes/forgejo-runner`; the
+registration token and generated `config.yml` are private runtime files there.
+If `config.yml` is regenerated, keep these settings so jobs reach the isolated
+daemon rather than the host:
+
+```yaml
+runner:
+  labels:
+    - generic:docker://forgejo-runner:generic
+container:
+  network: host
+  options: >-
+    --cpus=4 --memory=4g --pids-limit=1024
+    --volume /certs/client:/certs/client:ro
+    --env DOCKER_HOST=tcp://127.0.0.1:2376
+    --env DOCKER_TLS_VERIFY=1 --env DOCKER_CERT_PATH=/certs/client
+  valid_volumes:
+    - /certs/client
+  docker_host: "-"
+```
+
+Job containers run inside `docker-in-docker` on its host network, so
+`127.0.0.1:2376` is that daemon and `/certs/client` is its TLS client
+certificate directory. Rebuild the job image after editing its Dockerfile with
+`docker compose up --force-recreate runner-image`.
+Production deployment requests go directly to the keyed host HTTP service
+documented in [`host/forgejo-deploy`](../host/forgejo-deploy/README.md).
 
 Check the runner after updates:
 
 ```bash
 docker compose ps
-docker compose logs --tail=100 runner docker-in-docker deploy-relay
+docker compose logs --tail=100 runner runner-image docker-in-docker
 ```
 
 ## Sync SSH keys

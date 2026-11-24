@@ -54,6 +54,23 @@ services:
       retries: 12
       start_period: 20s
 
+  runner-image:
+    image: docker:28-cli
+    depends_on:
+      docker-in-docker:
+        condition: service_healthy
+    environment:
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_CERT_PATH: /certs/client
+    volumes:
+      - runner-certs:/certs:ro
+      - type: bind
+        source: /data/stacks/forgejo/runner-image
+        target: /build
+        read_only: true
+    command: [docker, build, --pull, --tag, forgejo-runner:generic, /build]
+
   runner:
     image: data.forgejo.org/forgejo/runner:13
     user: "1000:1000"
@@ -63,6 +80,8 @@ services:
         condition: service_healthy
       docker-in-docker:
         condition: service_healthy
+      runner-image:
+        condition: service_completed_successfully
     environment:
       DOCKER_HOST: tcp://docker:2376
       DOCKER_TLS_VERIFY: "1"
@@ -75,32 +94,6 @@ services:
           create_host_path: false
       - runner-certs:/certs:ro
     command: forgejo-runner daemon --config /data/config.yml
-
-  deploy-relay:
-    image: node:26-alpine
-    user: "1000:1000"
-    restart: unless-stopped
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
-    environment:
-      FORGEJO_DEPLOY_SOCKET: /run/forgejo-deploy/server.sock
-    volumes:
-      - type: bind
-        source: /data/stacks/host/forgejo-deploy/relay.mjs
-        target: /app/relay.mjs
-        read_only: true
-      - type: bind
-        source: /data/volumes/forgejo-deploy/run
-        target: /run/forgejo-deploy
-        bind:
-          create_host_path: false
-    command: [node, /app/relay.mjs]
-    healthcheck:
-      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/healthz').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 10s
 
 volumes:
   runner-certs:
