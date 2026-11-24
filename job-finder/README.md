@@ -29,8 +29,13 @@ curl --fail http://127.0.0.1:5007/api/status
 ```
 
 The UI and Intake API listen on host loopback at `http://127.0.0.1:5007/`.
-The app has no login. For tailnet access, forward this loopback port through
-Tailscale Serve rather than publishing it on all interfaces.
+The app has no login. Tailscale Serve publishes it on the tailnet at
+`https://<sheeta-tailnet-name>:5007/`. Set up the forward once, as the
+Tailscale operator or root:
+
+```bash
+tailscale serve --bg --https=5007 http://127.0.0.1:5007
+```
 
 ## Update
 
