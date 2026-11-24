@@ -1,0 +1,9 @@
+{
+  "apps": {
+    "example-app": {
+      "keyFile": "/data/volumes/forgejo-deploy/keys/example-app",
+      "command": ["/data/stacks/example-app/deploy.sh"],
+      "timeoutMs": 1800000
+    }
+  }
+}

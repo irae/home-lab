@@ -19,7 +19,8 @@ services:
       FORGEJO__service__REQUIRE_SIGNIN_VIEW: "true"
       FORGEJO__repository__DEFAULT_PRIVATE: private
       FORGEJO__repository__USE_COMPAT_SSH_URI: "false"
-      FORGEJO__actions__ENABLED: "false"
+      FORGEJO__actions__ENABLED: "true"
+      FORGEJO__actions__DEFAULT_ACTIONS_URL: https://data.forgejo.org
     ports:
       - "127.0.0.1:4005:3000"
       - "127.0.0.1:2203:22"
@@ -35,3 +36,72 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  docker-in-docker:
+    image: docker:28-dind
+    privileged: true
+    hostname: docker
+    restart: unless-stopped
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    volumes:
+      - runner-certs:/certs
+      - runner-docker:/var/lib/docker
+    healthcheck:
+      test: [CMD, docker, info]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  runner:
+    image: data.forgejo.org/forgejo/runner:13
+    user: "1000:1000"
+    restart: unless-stopped
+    depends_on:
+      forgejo:
+        condition: service_healthy
+      docker-in-docker:
+        condition: service_healthy
+    environment:
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_CERT_PATH: /certs/client
+    volumes:
+      - type: bind
+        source: /data/volumes/forgejo-runner
+        target: /data
+        bind:
+          create_host_path: false
+      - runner-certs:/certs:ro
+    command: forgejo-runner daemon --config /data/config.yml
+
+  deploy-relay:
+    image: node:26-alpine
+    user: "1000:1000"
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      FORGEJO_DEPLOY_SOCKET: /run/forgejo-deploy/server.sock
+    volumes:
+      - type: bind
+        source: /data/stacks/host/forgejo-deploy/relay.mjs
+        target: /app/relay.mjs
+        read_only: true
+      - type: bind
+        source: /data/volumes/forgejo-deploy/run
+        target: /run/forgejo-deploy
+        bind:
+          create_host_path: false
+    command: [node, /app/relay.mjs]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/healthz').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+volumes:
+  runner-certs:
+  runner-docker:

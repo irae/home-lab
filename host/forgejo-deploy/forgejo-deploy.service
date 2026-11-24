@@ -1,0 +1,14 @@
+[Unit]
+Description=Forgejo deployment command service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /data/stacks/host/forgejo-deploy/server.mjs --config /data/volumes/forgejo-deploy/config.json
+Environment=FORGEJO_DEPLOY_SOCKET=/data/volumes/forgejo-deploy/run/server.sock
+Restart=on-failure
+RestartSec=2
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

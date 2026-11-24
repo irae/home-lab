@@ -69,6 +69,13 @@ The worker script stays in this git tree. The unit's `ExecStart=` points here
 `/usr/local` later, change `ExecStart` in the service file before running the
 installer.
 
+## Forgejo deployments
+
+[`forgejo-deploy`](forgejo-deploy/README.md) is a systemd user service that
+allows the instance-level Forgejo runner to trigger one fixed deployment command
+per application. Applications have separate API keys, and the relay between
+Actions and the host service has no published host port.
+
 ## Reboot cron: leave it
 
 The daily "reboot if `/run/reboot-required` else skip" job is the reboot

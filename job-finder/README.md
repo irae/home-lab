@@ -37,7 +37,21 @@ Tailscale operator or root:
 tailscale serve --bg --https=5007 http://127.0.0.1:5007
 ```
 
-## Update
+## Automated verification and deployment
+
+Forgejo Actions runs the setup-script tests, Forgejo helper tests, unit tests,
+functional tests, typecheck, and UI build in one Node 26 job. Dependencies are
+installed once; the npm download cache is keyed by `package.json` and
+`package-lock.json`.
+
+A successful push to `main` calls the host deployment service with that commit
+SHA. [`deploy.sh`](deploy.sh) accepts only the current `origin/main`, builds the
+new image before downtime, takes a stopped data backup, starts the exact tested
+revision, and restores the previous image and data if the health check fails.
+Backups are private under `/data/volumes/job-finder-backups`, with the latest
+three retained.
+
+## Manual update
 
 The [host image timer](../host/README.md#image-update-workflow) skips this
 stack. Rebuild by hand as `irae`:

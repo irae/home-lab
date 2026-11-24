@@ -1,9 +1,10 @@
 # Forgejo
 
 Private Git hosting on `sheeta`, using the official rootless Forgejo 15 LTS
-image and SQLite. Git works over HTTP and Forgejo's built-in SSH. Actions,
-self-registration, and anonymous repository access are disabled. New
-repositories default to private.
+image and SQLite. Git works over HTTP and Forgejo's built-in SSH. Actions use
+an instance-level Forgejo Runner with Docker-in-Docker job isolation;
+self-registration and anonymous repository access are disabled. New repositories
+default to private.
 
 ## Deploy and access
 
@@ -47,6 +48,26 @@ docker compose exec forgejo forgejo admin user create --username irae \
 ```
 
 Change the temporary password on first login and replace the placeholder email.
+
+## Actions runner
+
+The `runner` service is registered globally so repositories on this instance can
+use `runs-on: node26`. Job containers run in the `docker-in-docker` service and
+do not receive the host Docker socket. Runner state and its Actions cache live in
+`/data/volumes/forgejo-runner`; the registration token and generated
+`config.yml` are private runtime files there.
+
+The `deploy-relay` service publishes no host port. It only connects workflow
+HTTP requests from the Forgejo Compose network to the host deployment service's
+Unix socket. Install and manage that service through
+[`host/forgejo-deploy`](../host/forgejo-deploy/README.md).
+
+Check the runner after updates:
+
+```bash
+docker compose ps
+docker compose logs --tail=100 runner docker-in-docker deploy-relay
+```
 
 ## Sync SSH keys
 
