@@ -6,6 +6,7 @@ services:
     user: "1000:1000"
     restart: unless-stopped
     environment:
+      JOB_FINDER_ENV: prod
       TYPESAFE_API_KEY: "${TYPESAFE_API_KEY:-}"
     ports:
       - "127.0.0.1:5007:3000"
