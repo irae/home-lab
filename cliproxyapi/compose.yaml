@@ -11,7 +11,7 @@ services:
       HOME: /data
       MANAGEMENT_STATIC_PATH: /data/static
     ports:
-      - "127.0.0.1:8317:8317"
+      - "127.0.0.1:5009:8317"
     volumes:
       - type: bind
         source: /data/volumes/cliproxyapi
