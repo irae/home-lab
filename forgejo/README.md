@@ -3,7 +3,8 @@
 Private Git hosting on `sheeta`, using the official rootless Forgejo 15 LTS
 image and SQLite. Git works over HTTP and Forgejo's built-in SSH. Actions use
 an instance-level Forgejo Runner with Docker-in-Docker job isolation;
-self-registration and anonymous repository access are disabled. New repositories
+self-registration is disabled. Anonymous visitors can browse public repositories;
+new repositories
 default to private.
 
 ## Deploy and access
